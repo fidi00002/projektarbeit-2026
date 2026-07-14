@@ -1,0 +1,57 @@
+# Projektarbeit 2026
+
+## Voraussetzungen
+
+- Python 3.10.00
+- aktuelle pip version
+- windows powershell
+
+## Installationsguide:
+
+```powershell
+git clone git@github.com:fidi00002/projektarbeit-2026.git
+
+py -3.10 -m venv .venv
+ 
+.\.venv\Scripts\Activate.ps1
+```
+
+(Falls Powershell die Ausführung des Skripts blockieren sollte, kann mittels:
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
+umgangen werden) 
+
+
+mit 
+```powershell
+ python --version
+ ``` 
+ überprüfen ob 
+ ```powershell 
+ Python 3.10.0
+ ``` 
+ als aktuelle Python Version gegeben
+
+dann mittels 
+```powershell 
+python -m pip install -r requirements.txt
+``` 
+alle benötigten Bibliotheken installieren
+
+Das Hauptprogramm kann mit 
+```powershell 
+python main.py
+```
+gestartet werden
+(oder einfach über den Play Button, falls VS Code benutzt wird)
+
+Nach Abschluss, kann die virtuelle Umgebung mittels 
+```powershell 
+deactivate
+```
+verlassen werden
+
+Es gibt folgende Projektdateien:
+
+
