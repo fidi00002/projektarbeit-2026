@@ -1,0 +1,9 @@
+.venv/
+.vscode/
+CUADv1.json
+risk_scaling.py
+test.json
+train_separate_questions.json
+__pycache__/
+*.pyc
+.env
