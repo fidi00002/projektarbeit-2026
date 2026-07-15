@@ -4,12 +4,17 @@
 
 - Python 3.10.00
 - aktuelle pip version
+- Vs Code
 - windows powershell
 
 ## Installationsguide:
 
+
+laying the foundation for installment:
 ```powershell
 git clone git@github.com:fidi00002/projektarbeit-2026.git
+
+cd projektarbeit-2026
 
 py -3.10 -m venv .venv
  
@@ -44,6 +49,10 @@ dann mittels
 python -m pip install -r requirements.txt
 ``` 
 alle benötigten Bibliotheken installieren
+
+Lastly regarding the setup you should definitely select the corresponding interpreter by hitting STRG + P + SHIFT and choosing the one which includes '.venv' like this:
+
+![selecting right interpreter](images/choose_right_interpreter.png)
 
 Das Hauptprogramm kann mit 
 ```powershell 
