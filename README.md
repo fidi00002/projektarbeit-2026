@@ -50,7 +50,7 @@ python -m pip install -r requirements.txt
 ``` 
 alle benötigten Bibliotheken installieren
 
-Lastly regarding the setup you should definitely select the corresponding interpreter by hitting STRG + P + SHIFT and choosing the one which includes '.venv' like this:
+Lastly regarding the setup you should definitely select the corresponding interpreter by hitting STRG + P + SHIFT > Python: Select Interpreter and choosing the one which includes '.venv' like this:
 
 ![selecting right interpreter](images/choose_right_interpreter.png)
 
