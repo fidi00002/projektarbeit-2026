@@ -20,7 +20,13 @@ py -3.10 -m venv .venv
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 ```
-umgangen werden) 
+einmalig umgangen werden)
+
+Für die dauerhafte Nutzung empfehle ich jedoch folgenden Befehl:
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+dieser sorgt dafür dass lokale Skripte wie .venv dauerhaft auf dem Benutzer uneingeschränkt ausgeführt werden können
 
 
 mit 
