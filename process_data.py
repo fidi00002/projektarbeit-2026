@@ -5,19 +5,26 @@ from collections import Counter #musste installiert werden
 import pandas as pd #musste installiert werden
 import nltk #musste installiert werden - momentan noch nicht in benutzung
 from nltk.corpus import stopwords #nicht in Benutzung
-from nltk.tokenize import word_tokenize #nicht in Benutzung
+
+right_dataset = {
+     
+    "sentence": [],
+    "sentence_id": [],
+    "risk_words": [], #words with counting
+    "PMI_Score": [],
+
+}
 
 
-dataset_legal = {
+dataset = {
 
     "risk-word": [],
     "risk-sentence": [],
-    "general_frequence" : [],
-    "relative_frequence": [],
-    "co-occurence": [],
-    "subcategory": [] #müssen noch erstellt werden
+    "TF-IDF_characteristic": [],  #which technique of those two more important
+    "word_id": []
 
 }
+
 
 dataset_financial = {
 
@@ -126,7 +133,21 @@ def filter(i: int): # filters the contract according to specific words, muss noc
 
     content_further_seperated = pre_processing(i, False)
 
+    legal_list : list = []
+
     #legal terms search
+    for i in range(len(content_further_seperated)):
+            if legal_list := re.findall(r"\bliabilit(y|ies)|liable(ness)|claim(s|ed|ing)|"
+                r"cancel(led|ed|ling|ing|lation(s))|penal(ty|ties)|punitive|arbitrat(or(s)|ion(s))|media(te(d)|ting|tor(s)|tion(s))|"
+                r"disput(es|ed|ing)|fail(ure(s)|ed|ing)|indemni(fy(ing)|fie(s|d)|fication|ty|ties)|" 
+                r"force[-]majeure|act(s)ofgod|breach(es|ed|ing)|(hold|held)harmless|waiv(er(s)|e(d)|ing)|terminat(ion(s)|e(d)|ing)|"
+                r"default(s|ed|ing)|sabotag(e(d)|ing)|war(s)|injunction(s)|restrain(ed|ing)|infring(e|ed|ing|ement(s))|"
+                r"misconduct(ed|ing|s)|violat(ion(s)|e(d)|ing)\b", content_further_seperated[i], re.I):
+                    right_dataset["risk-sentence"].append(content_further_seperated[i])
+                    right_dataset["risk-words"].append(legal_list)
+                    possible_legal_arguments.append(content_further_seperated[i])
+                    possible_legal_arguments_words.append(legal_list)
+
     for i in range(len(content_further_seperated)):
         if legal_word := re.search(r"\bliabilit(y|ies)|liable(ness)|claim(s|ed|ing)|"
             r"cancel(led|ed|ling|ing|lation(s))|penal(ty|ties)|punitive|arbitrat(or(s)|ion(s))|media(te(d)|ting|tor(s)|tion(s))|"
@@ -158,12 +179,12 @@ def filter(i: int): # filters the contract according to specific words, muss noc
                 possible_operative_arguments.append(content_further_seperated[i])
                 possible_operative_arguments_words.append(operative_word.group())
 
-    #NEU
+    #NEU - positive Bonus in Risk Scaling soon to be implemented
 
-    for i in range(len(content_further_seperated)):
-         if positive_word := re.search(r"\blimited liability|liability shall not exceed|maximum liability|cap on liability\b", content_further_seperated[i], re.I):
-                possible_positive_arguments.append(content_further_seperated[i])
-                possible_positive_arguments_words.append(positive_word.group())
+    # for i in range(len(content_further_seperated)):
+    #     if positive_word := re.search(r"\blimited liability|liability shall not exceed|maximum liability|cap on liability\b", content_further_seperated[i], re.I):
+    #            possible_positive_arguments.append(content_further_seperated[i])
+    #            possible_positive_arguments_words.append(positive_word.group())
 
 
     risk_setting_fin = 5

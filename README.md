@@ -50,6 +50,11 @@ python -m pip install -r requirements.txt
 ``` 
 alle benötigten Bibliotheken installieren
 
+danach zusätzlich einmal die passenden import dateien für die `nltk` library runterladen:
+```powershell
+python -m nltk.downloader stopwords
+```
+
 Lastly regarding the setup you should definitely select the corresponding interpreter by hitting STRG + P + SHIFT > Python: Select Interpreter and choosing the one which includes `.venv` like this:
 
 ![selecting right interpreter](images/choose_right_interpreter.png)
