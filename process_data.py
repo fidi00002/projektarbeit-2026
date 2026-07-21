@@ -84,11 +84,13 @@ dataset_general_IMPORTANT = {
 }
 
 
-def pre_processing(i: int, solo_words: bool): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
+def pre_processing(i: int, solo_words: bool, remove_stop_words: bool): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
     contract_type: str
     parentcompany_of_contract: str
     content: str 
     
+    stop_words = set(stopwords.words('english'))
+
     _, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
 
     content_low: str= content.lower() #transformiert content komplett in lower case
@@ -104,6 +106,12 @@ def pre_processing(i: int, solo_words: bool): #preprocesses the contract and eit
         while "" in split_words: #solange leerzeichen vorhanden
 
             split_words.remove("") #filtert alle leerzeichen im text raus
+
+        if remove_stop_words:
+             
+            split_words_filtered = [word for word in split_words if word not in stop_words]
+
+            return split_words_filtered
 
         return split_words
     
@@ -221,7 +229,7 @@ def most_used_words(): #analyses the most used words in the entire contract for 
                                 396, 398, 399, 400, 406, 413, 417, 429, 432, 436, 443, 447, 455, 457, 458, 460, 469,
                                 471, 474, 478, 481, 486, 493, 498, 500, 505, 506]
 
-    words_of_contract = pre_processing(31, True)
+    words_of_contract = pre_processing(31, True, True)
 
     counter = Counter(words_of_contract)
 
@@ -235,17 +243,17 @@ def calculation_risk_score(financial: int, legal:int, operativ: int, length: int
     return (financial+legal+operativ)/length #nochmal minus positive/length
 
 def setting_dic_details():
-     
-     words_of_contract = pre_processing(31, True)
+
+     words_of_contract = pre_processing(31, True, True)
 
      counter = Counter(words_of_contract)
 
-     totalcount_words = counter.total()
+    # totalcount_words = counter.total()
 
-     calc_general_freq(totalcount_words)
+    # relative_word_percentage = counter_current_word/totalcount_words
 
 
-def calc_general_freq(words_in_total: int):
+def td_idf(words_in_total: int):
 
     #wie oft einzelnes wort allgemein vorkommt durch allgemeine anzahl an wörtern
 
@@ -259,13 +267,13 @@ def calc_general_freq(words_in_total: int):
      
     return None
 
-#most_used_words() -> needed for further construction of pre-processing filters
+most_used_words() #-> needed for further construction of pre-processing filters
 
 
 
 
 
-filter(16)
+#filter(16)
 
 #print(pre_processing(0, True))
 
