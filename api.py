@@ -13,7 +13,7 @@ def evaluate_contract(contract: str):
     else:
         contract_type, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
 
-    client = genai.Client(api_key="AIzaSyAe3faGbj_LEeW5ZX5CQBM5i4zwMCixRrE")
+    client = genai.Client(api_key=".")
 
     response = client.models.generate_content(
         model="gemini-2.5-flash-lite",
