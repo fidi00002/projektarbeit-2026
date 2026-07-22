@@ -85,14 +85,14 @@ def analyse_contract():
 
     root3 = tk.Tk()
 
-    root3.title = "Bitte Vertragsdatei auswählen"
+    root3.title("Bitte Vertragsdatei auswählen")
     root3.withdraw()
     path_existing = False
     while True:
         filename = fd.askopenfilename(
             title="Bitte Vertragsdatei auswählen",
             filetypes= [("PDFs", "*.pdf")],
-            initialdir= "C:/Users/finnd/Documents/Informatik/Projektarbeit" #später ändern zu C:/Users
+            initialdir= "." #später ändern zu C:/Users
         )
         if filename:
             realname = filename.rsplit("/")
