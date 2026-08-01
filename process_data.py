@@ -6,47 +6,21 @@ import pandas as pd #musste installiert werden
 import nltk #musste installiert werden - momentan noch nicht in benutzung
 from nltk.corpus import stopwords #nicht in Benutzung
 
-right_dataset = {
+# sentence_dataset_represantation_example = {
      
-    "sentence": [],
-    "sentence_id": [],
-    "risk_words": [], #words with counting
-    "PMI_Score": [],
+#     sentence_id = {
+#         "sentence_id": [],
+#         "sentence": [],
+#         "legal list": []
+#         "financial list": []
+#         "operative list": []
+#         "page_number": [],
+#         "line": []
+#     }
 
-}
+# }
 
-
-dataset = {
-
-    "risk-word": [],
-    "risk-sentence": [],
-    "TF-IDF_characteristic": [],  #which technique of those two more important
-    "word_id": []
-
-}
-
-
-dataset_financial = {
-
-    "risk-word": [],
-    "risk-sentence": [],
-    "general_frequence" : [],
-    "relative_frequence": [],
-    "co-occurence": [],
-    "subcategory": [] #müssen noch erstellt werden
-
-}
-
-dataset_operative = {
-
-    "risk-word": [],
-    "risk-sentence": [],
-    "general_frequence" : [],
-    "relative_frequence": [],
-    "co-occurence": [],
-    "subcategory": [] #müssen noch erstellt werden
-
-}
+sentence_dataset = {}
 
 dataset_content = {
 
@@ -83,15 +57,21 @@ dataset_general_IMPORTANT = {
 
 }
 
-
-def pre_processing(i: int, solo_words: bool, remove_stop_words: bool): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
+#function only accepts key_words due to '*'
+def pre_processing(*, i: int = 1, text_given = str, solo_words: bool = False, remove_stop_words: bool = False): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
     contract_type: str
     parentcompany_of_contract: str
     content: str 
-    
+
     stop_words = set(stopwords.words('english'))
 
-    _, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
+    if not text_given:
+
+        _, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
+
+    else:
+
+        content = text_given
 
     content_low: str= content.lower() #transformiert content komplett in lower case
 
@@ -117,15 +97,30 @@ def pre_processing(i: int, solo_words: bool, remove_stop_words: bool): #preproce
     
     else: #unterteilt text in sätze
 
-        content_replace = re.sub('\s', "", content_strip) #entfernt newline, tab und leer zeichen im text
+        content_replace = re.sub('\s', " ", content_strip) #entfernt newline, tab und komprimiert diese zu normalen leerzeichen
 
         content_further_seperated = re.split("\.", content_replace) #separiert content nach "."-zeichen
 
         return content_further_seperated
+    
+#an dictionary structure mit einzelnen seiten denken
+def creation_of_dictionary(metadata_contract: dict) -> None:
+    for z in range (len(metadata_contract["listlist_of_pages"])):
+        splitup_text: str = pre_processing(text_given = metadata_contract["listlist_of_pages"][z][0])
+        for i in range (len(splitup_text) - 1):
+            sentence_id: str = fr"""S{metadata_contract["listlist_of_pages"][z][1]}L{i}"""
+            sentence_dataset[f"{sentence_id}"] = {}
+            sentence_dataset [f"{sentence_id}"]["id"] = sentence_id
+            single_words_list: list = filter(splitup_text[i], sentence_id)
+            sentence_dataset [f"{sentence_id}"]["text"] = splitup_text[i]
+            sentence_dataset [f"{sentence_id}"]["page"] = metadata_contract["listlist_of_pages"][z][1]
+    print(sentence_dataset)
 
 
+         
 
-def filter(i: int): # filters the contract according to specific words, muss noch in direktes pdf reading umgewandelt werden
+
+def filter(text: str = "", sentence_id: str = ""): # filters the contract according to specific words, muss noch in direktes pdf reading umgewandelt werden
 
     possible_financial_arguments: list = []
     possible_financial_arguments_words: list = []
@@ -139,53 +134,51 @@ def filter(i: int): # filters the contract according to specific words, muss noc
     possible_operative_arguments: list = []
     possible_operative_arguments_words: list = []
 
-    content_further_seperated = pre_processing(i, False)
 
     legal_list : list = []
 
     #legal terms search
-    for i in range(len(content_further_seperated)):
-            if legal_list := re.findall(r"\bliabilit(y|ies)|liable(ness)|claim(s|ed|ing)|"
-                r"cancel(led|ed|ling|ing|lation(s))|penal(ty|ties)|punitive|arbitrat(or(s)|ion(s))|media(te(d)|ting|tor(s)|tion(s))|"
-                r"disput(es|ed|ing)|fail(ure(s)|ed|ing)|indemni(fy(ing)|fie(s|d)|fication|ty|ties)|" 
-                r"force[-]majeure|act(s)ofgod|breach(es|ed|ing)|(hold|held)harmless|waiv(er(s)|e(d)|ing)|terminat(ion(s)|e(d)|ing)|"
-                r"default(s|ed|ing)|sabotag(e(d)|ing)|war(s)|injunction(s)|restrain(ed|ing)|infring(e|ed|ing|ement(s))|"
-                r"misconduct(ed|ing|s)|violat(ion(s)|e(d)|ing)\b", content_further_seperated[i], re.I):
-                    right_dataset["risk-sentence"].append(content_further_seperated[i])
-                    right_dataset["risk-words"].append(legal_list)
-                    possible_legal_arguments.append(content_further_seperated[i])
-                    possible_legal_arguments_words.append(legal_list)
+    #for i in range(len(content_further_seperated)):
+    legal_list = re.findall(r"\bliabilit(?:y|ies)|liable(?:ness)|claim(?:s|ed|ing)?|"
+        r"cancel(?:led|ed|ling(?:s)?|ing|lation(?:s)?)?|penal(?:ty|ties)|punitive|arbitrat(?:or(?:s)?|ion(?:s)?)|media(?:te(?:d)?|ting|tor(?:s)?|tion(?:s)?)|"
+        r"disput(?:e(?:s)?|ed|ing(?:s)?)|fail(?:ure(?:s)?|ed|ing(?:s)?)|indemni(?:fy(?:ing)?|fie(?:s|d)|fication|ty|ties)|" 
+        r"force(?:[- ]+majeure)|act(?:(?:s)?\s*of\s*god)|breach(?:es|ed|ing)?|(?:hold|held)harmless|waiv(?:er(?:s)?|e(?:d)?|ing)|terminat(?:ion(?:s)?|e(?:d)?|ing)|"
+        r"default(?:s|ed|ing)?|sabotag(?:e(?:d)?|ing)|war(?:s)?|injunction(?:s)?|restrain(?:ed|ing(?:s)?)|infring(?:e(?:s)?|ed|ing(?:s)?|ement(?:s)?)|"
+        r"misconduct(?:ed|ing(?:s)?|s)?|violat(?:ion(?:s)?|e(?:d)?|ing)\b", text, re.I)
 
-    for i in range(len(content_further_seperated)):
-        if legal_word := re.search(r"\bliabilit(y|ies)|liable(ness)|claim(s|ed|ing)|"
-            r"cancel(led|ed|ling|ing|lation(s))|penal(ty|ties)|punitive|arbitrat(or(s)|ion(s))|media(te(d)|ting|tor(s)|tion(s))|"
-            r"disput(es|ed|ing)|fail(ure(s)|ed|ing)|indemni(fy(ing)|fie(s|d)|fication|ty|ties)|" 
-            r"force[-]majeure|act(s)ofgod|breach(es|ed|ing)|(hold|held)harmless|waiv(er(s)|e(d)|ing)|terminat(ion(s)|e(d)|ing)|"
-            r"default(s|ed|ing)|sabotag(e(d)|ing)|war(s)|injunction(s)|restrain(ed|ing)|infring(e|ed|ing|ement(s))|"
-            r"misconduct(ed|ing|s)|violat(ion(s)|e(d)|ing)\b", content_further_seperated[i], re.I):
-                dataset_legal["risk-sentence"].append(content_further_seperated[i])
-                dataset_legal["risk-word"].append(legal_word.group())
-                possible_legal_arguments.append(content_further_seperated[i])
-                possible_legal_arguments_words.append(legal_word.group())
+
+                    # right_dataset["risk-sentence"].append(content_further_seperated[i])
+                    # right_dataset["risk-words"].append(legal_list)
+                    # possible_legal_arguments.append(content_further_seperated[i])
+                    # possible_legal_arguments_words.append(legal_list)
+
 
     #financial terms search
-    for i in range(len(content_further_seperated)):
-        if financial_word := re.search(r"\bpay(able|s|d|ment(s)|(un|pre[- ])paid)|LC(s)|" 
-            r"letter(s)ofcredit|(un)insur(ance(s)|e(s|d)|ing|able|ured)|(un)cover(age(s)|ed|ing)|indemni(fy(ing)|fie(s|d)|fication|ty|ties)|"
-            r"damag(e(s|d)|ing)|repurchas(ing|e(s|d))|CPI(s)|ConsumerPriceInd(ex|ices)|"
-            r"terminat(ion(s)|e(s|d)|ing)|default(s|ed|ing)|(infringe(ment(s)|(s|d))|infringing)|fee(s)|charg(e(s|d)|ing)|cover(age|ing|ed|s)|"
-            r"los(s(es)|e|es|t|ing)|expense(s|d)\b", content_further_seperated[i], re.I):
-                possible_financial_arguments.append(content_further_seperated[i])
-                possible_financial_arguments_words.append(financial_word.group())
+    financial_list = re.findall(r"\bpay(?:able|s|d|ment(?:s)?)?|(?:un[ -]|pre[- ]+)?paid|LC(?:s)?|" 
+        r"letter(?:s)?\s+of\s+credit|insur(?:ance(?:s)|e(?:s|d)?|ing|able|ured)|cover(?:age(?:s)?|ed|ing)|indemni(?:fy(?:ing)?|fie(?:s|d)|fication|ty|ties)|"
+        r"damag(?:e(?:s|d)?|ing)|repurchas(?:ing|e(?:s|d)?)|CPI(?:s)?|ConsumerPriceInd(?:ex|ices)|"
+        r"terminat(?:ion(?:s)?|e(?:s|d)?|ing)|default(?:s|ed|ing)?|(infringe(?:ment(?:s)?|(?:s|d)?)?|infringing)|fee(?:s)?|charg(?:e(?:s|d)?|ing)|cover(?:age|ing(?:s)?|ed|s)|"
+        r"los(?:s(?:es)?|e|es|t|ing)|expense(?:s|d)?\b", text, re.I)             
+                # possible_financial_arguments.append(content_further_seperated[i])
+                # possible_financial_arguments_words.append(financial_word.group())
 
 
     #operative terms search
-    for i in range(len(content_further_seperated)):
-        if operative_word := re.search(r"\binspect(ion(s)|ing|ed|s|able)|delay(ing|ed|s)|(non-)exclusiv(ely|ity)|warrant(y|ies|ing|ed|s)|"
-            r"(non-)confid(ential(ity)|e(s|d)|ing)|(low-)quali(ty|ties|f(ie(s|d)|y(ing)))|injunction(s)|restrain(s|ed|ing(order(s)))|"
-            r"disclos(ure(s)|e(s|d)|ing)|misle(d|ad(ing|s))|untrue|omi(t(ted|ting|s)|ssion(s))\b", content_further_seperated[i], re.I):
-                possible_operative_arguments.append(content_further_seperated[i])
-                possible_operative_arguments_words.append(operative_word.group())
+    operative_list = re.findall(r"\binspect(?:ion(?:s)?|ing|ed|s|able)?|delay(?:ing|ed|s)?|(?:non[- ])?exclusiv(?:ely|e|ity)|warrant(?:y|ies|ing|ed|s)|"
+        r"(?:non[- ])?confid(?:ential(?:ity)?|e(?:s|d)?|ing)|(?:low[- ])?quali(?:ty|ties)|injunction(?:s)?|restrain(?:s|ed|ing\s*(?:order{0,1}(?:s)?)?)?|"
+        r"disclos(?:ure(?:s)?|e(?:s|d)?|ing)|misle(?:d|ad(?:ing|s)?)|untrue|omi(?:t(?:ted|ting|s)?|ssion(?:s)?)\b", text, re.I)
+                # possible_operative_arguments.append(content_further_seperated[i])
+                # possible_operative_arguments_words.append(operative_word.group())
+
+    if financial_list:
+        sentence_dataset [f"{sentence_id}"]["financial_risk_words"] = financial_list
+    if legal_list:
+        sentence_dataset[f"{sentence_id}"]["legal_risk_words"] = legal_list
+    if operative_list:
+        sentence_dataset [f"{sentence_id}"]["operative_risk_words"] = operative_list
+
+    return None
+
 
     #NEU - positive Bonus in Risk Scaling soon to be implemented
 
@@ -195,27 +188,29 @@ def filter(i: int): # filters the contract according to specific words, muss noc
     #            possible_positive_arguments_words.append(positive_word.group())
 
 
-    risk_setting_fin = 5
-    risk_setting_leg = 5
-    risk_setting_op = 3
+#CALCULATION OF RISK SCORE: IMPORTANT FOR LATER !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    total_risk_fin = risk_setting_fin * len(possible_financial_arguments)
-    total_risk_leg = risk_setting_leg * len(possible_legal_arguments)
-    total_risk_op = risk_setting_op * len(possible_operative_arguments)
+    # risk_setting_fin = 5
+    # risk_setting_leg = 5
+    # risk_setting_op = 3
 
-    total_length = len(possible_operative_arguments) + len(possible_legal_arguments) + len(possible_financial_arguments)
+    # total_risk_fin = risk_setting_fin * len(possible_financial_arguments)
+    # total_risk_leg = risk_setting_leg * len(possible_legal_arguments)
+    # total_risk_op = risk_setting_op * len(possible_operative_arguments)
 
-    overall_risk = calculation_risk_score(total_risk_fin, total_risk_leg, total_risk_op, total_length)
+    # total_length = len(possible_operative_arguments) + len(possible_legal_arguments) + len(possible_financial_arguments)
 
-    setting_dic_details()
+    # overall_risk = calculation_risk_score(total_risk_fin, total_risk_leg, total_risk_op, total_length)
 
-    print(fr"legal:", "\n" , fr"{possible_legal_arguments}")
-    print(fr"finacial:", "\n" , fr"{possible_financial_arguments}")
-    print(fr"operative:", "\n" , fr"{possible_operative_arguments}")
+    # setting_dic_details()
 
-    print("Approximate risk score: %f" % overall_risk)
+    # print(fr"legal:", "\n" , fr"{possible_legal_arguments}")
+    # print(fr"finacial:", "\n" , fr"{possible_financial_arguments}")
+    # print(fr"operative:", "\n" , fr"{possible_operative_arguments}")
 
-    print(fr""" current Risk-Word: {dataset_legal.get("Risk-Word")[1]} for""", "\n", fr"""current Risk-Sentence: {dataset_legal.get("Risk-Sentence")[1]}""")
+    # print("Approximate risk score: %f" % overall_risk)
+
+    # print(fr""" current Risk-Word: {dataset_legal.get("Risk-Word")[1]} for""", "\n", fr"""current Risk-Sentence: {dataset_legal.get("Risk-Sentence")[1]}""")
 
 
 
@@ -229,7 +224,7 @@ def most_used_words(): #analyses the most used words in the entire contract for 
                                 396, 398, 399, 400, 406, 413, 417, 429, 432, 436, 443, 447, 455, 457, 458, 460, 469,
                                 471, 474, 478, 481, 486, 493, 498, 500, 505, 506]
 
-    words_of_contract = pre_processing(31, True, True)
+    words_of_contract = pre_processing(i = 31, solo_words=True, remove_stop_words=True)
 
     counter = Counter(words_of_contract)
 
@@ -267,7 +262,7 @@ def td_idf(words_in_total: int):
      
     return None
 
-most_used_words() #-> needed for further construction of pre-processing filters
+#most_used_words() #-> needed for further construction of pre-processing filters
 
 
 
