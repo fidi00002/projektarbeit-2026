@@ -31,53 +31,85 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         all_pieces.reverse()
         #print(all_pieces[0])
     def create_contract_list():
-    # [Company]_[Date]_[SEC Filing]_[Exhibit]_[ContractType]
-        list; relevant_contracts = []
-        int; counter = 0
-        int; service_counter = 0
-        int; outsourcing_counter = 0
-        int; supply_counter = 0
-        int; distributor_counter = 0
-        int; license_counter = 0
-        list; relevant_contract_indices = []
-        #suche speziell nach: License Agreement, Service Agreement, Supply Agreement, Distributor Agreement and Outsourcing Agreement
-        for i in range(510):               #Ausgabe aller Titel aller Verträge
-            list; contract = summary['data'][i]
-            str; current_contract = contract.get('title')
-            list; parts_of_contract = title_pattern.split(current_contract)
-            #index = parts_of_contract.index("Agreement")
-            #contract_type = parts_of_contract[index]
-            str; contract_type = parts_of_contract[len(parts_of_contract) - 1]
-            str; company_of_contract = parts_of_contract[0]
-            #exact_contract_type = re.findall(r"\w+", contract_type)
-            str; low = contract_type.upper()
-            if low.find("LICENSE") != -1 or low.find("SERVICE") != -1 or low.find("DISTRIBUTOR") != -1\
-            or low.find("SUPPLY") != -1 or low.find("OUTSOURCING") != -1:
-                if low.find("LICENSE") != -1:
-                    int; license_counter += 1
-                elif low.find("SERVICE") != -1:
-                    int; service_counter += 1
-                elif low.find("SUPPLY") != -1:
-                    int; supply_counter += 1
-                elif low.find("DISTRIBUTOR") != -1:
-                    int; distributor_counter += 1
-                elif low.find("OUTSOURCING") != -1:
-                    int; outsourcing_counter += 1
-                print("Title of contract no. %d: " % (i+1),  contract_type, "\n Company of the contract: ", company_of_contract, "\n")
-                counter += 1
-                relevant_contract_indices.append(i)
-        print("The relevant contracts are at the following positions: ", relevant_contract_indices)
+    # # [Company]_[Date]_[SEC Filing]_[Exhibit]_[ContractType]
+    #     list; relevant_contracts = []
+    #     int; counter = 0
+    #     int; service_counter = 0
+    #     int; outsourcing_counter = 0
+    #     int; supply_counter = 0
+    #     int; distributor_counter = 0
+    #     int; license_counter = 0
+    #     license_indices: list = []
+    #     distributor_indices: list = []
+    #     service_indices: list = []
+    #     supply_indices: list = []
+    #     outsourcing_indices: list = []
+    #     list; relevant_contract_indices = []
+    #     #suche speziell nach: License Agreement, Service Agreement, Supply Agreement, Distributor Agreement and Outsourcing Agreement
+    #     for i in range(510):               #Ausgabe aller Titel aller Verträge
+    #         list; contract = summary['data'][i]
+    #         str; current_contract = contract.get('title')
+    #         #list; parts_of_contract = title_pattern.split(current_contract)
+    #         #index = parts_of_contract.index("Agreement")
+    #         #contract_type = parts_of_contract[index]
+    #         #str; contract_type = parts_of_contract[len(parts_of_contract) - 1]
+    #         #str; company_of_contract = parts_of_contract[0]
+    #         #exact_contract_type = re.findall(r"\w+", contract_type)
+    #         str; low = current_contract.lower()
+    #         if re.search(r"license|licence|licensing", low) or re.search(r"service(:?s)?|servicing", low) or re.search(r"distribut(?:or|ion)", low) \
+    #         or low.find("supply") != -1 or low.find("outsourcing") != -1:
+    #             if re.search(r"license|licence|licensing", low):
+    #                 int; license_counter += 1
+    #                 license_indices.append(i+1)
+    #             if re.search(r"service(:?s)?|servicing", low):
+    #                 int; service_counter += 1
+    #                 service_indices.append(i+1)
+    #             if low.find("supply") != -1:
+    #                 int; supply_counter += 1
+    #                 supply_indices.append(i+1)
+    #             if re.search(r"distribut(?:or|ion)", low):
+    #                 int; distributor_counter += 1
+    #                 distributor_indices.append(i+1)
+    #             if low.find("outsourcing") != -1:
+    #                 int; outsourcing_counter += 1
+    #                 outsourcing_indices.append(i+1)
+        #hardcoded lists, if time -> rewrite
+        service_indices = [18,25, 49, 54, 56, 59, 76, 79, 104, 123, 161, 180, 201, 211, 213, 236, 249, 279, 286, 310, 326, 357, 386, 407, 456, 458, 461, 507]
+        distributor_indices = [1, 68, 86, 89, 90, 102, 121, 135, 137, 154, 156, 165, 168, 199, 217, 241, 261, 263, 266, 298, 311, 312, 341, 346, 360, 367, 370, 380, 448, 459, 472, 494]
+        supply_indices = [3, 17, 55, 71, 108, 116, 144, 170, 184, 189, 220, 240, 243, 314, 377, 379, 400, 418]
+        outsourcing_indices = [42, 63, 66, 69, 70, 100, 133, 176, 267, 305, 338, 349, 392, 401, 444, 479, 482, 487]
+        license_indices = [28, 40, 44, 78, 95, 113, 147, 159, 164, 175, 192, 229, 231, 248, 250, 281, 307, 328, 344, 369, 389, 397, 399, 414, 430, 433, 437, 446, 470, 475, 490, 501, 506]
+        #hardcoded counter
+        outsourcing_counter = len(outsourcing_indices)
+        service_counter = len(service_indices)
+        distributor_counter = len(distributor_indices)
+        supply_counter = len(supply_indices)
+        license_counter = len(license_indices)
+
+        relevant_contract_indices: list = sorted(service_indices + distributor_indices + supply_indices + outsourcing_indices + license_indices)
+
         dev_of_dcontracts: int = (distributor_counter - 32)
-        int; dev_of_scontracts = (service_counter - 28)
-        int; dev_of_supcontracts = (supply_counter - 18)
-        int; dev_of_ocontracts = (outsourcing_counter - 18)
-        int; dev_of_lcontracts = (license_counter - 33)
-        print("You can use %d" % (counter), "different contracts for training\n", "split up in: \n",\
+        dev_of_scontracts: int = (service_counter - 28)
+        dev_of_supcontracts: int = (supply_counter - 18)
+        dev_of_ocontracts: int = (outsourcing_counter - 18)
+        dev_of_lcontracts: int = (license_counter - 33)
+        print("The relevant contracts are at the following positions: ", relevant_contract_indices)
+
+        counter: int = len(relevant_contract_indices)
+
+        for i in range(len(relevant_contract_indices)):
+            list; contract = summary['data'][relevant_contract_indices[i] - 1]
+            str; current_contract = contract.get('title')
+            print("Title of contract no. %d: " % (relevant_contract_indices[i]),  current_contract, "\n")
+
+        print("You can use %d" % (counter), "different contracts for training", " split up in: \n",\
             "distributor: %d," % distributor_counter, "perfectly fine" if (dev_of_dcontracts == 0) else ("meaning the count is off by %d -> false positives" % dev_of_dcontracts) if dev_of_dcontracts > 0 else ("meaning the count is off by %d -> false negatives" % dev_of_dcontracts) ,"\n",\
             "service: %d," % service_counter, "perfectly fine" if (dev_of_scontracts == 0) else ("meaning the count is off by %d -> false positives" % dev_of_scontracts) if dev_of_scontracts > 0 else ("meaning the count is off by %d -> false negatives" % dev_of_scontracts) ,"\n",\
             "supply: %d," % supply_counter, "perfectly fine" if (dev_of_supcontracts == 0) else ("meaning the count is off by %d -> false positives" % dev_of_supcontracts) if dev_of_supcontracts > 0 else ("meaning the count is off by %d -> false negatives" % dev_of_supcontracts) ,"\n",\
             "outsourcing: %d," % outsourcing_counter, "perfectly fine" if (dev_of_ocontracts == 0) else ("meaning the count is off by %d -> false positives" % dev_of_ocontracts) if dev_of_ocontracts > 0 else ("meaning the count is off by %d -> false negatives" % dev_of_ocontracts) ,"\n",\
             "license: %d," % license_counter, "perfectly fine" if (dev_of_lcontracts == 0) else ("meaning the count is off by %d -> false positives" % dev_of_lcontracts) if dev_of_lcontracts > 0 else ("meaning the count is off by %d -> false negatives" % dev_of_lcontracts) ,"\n")
+        print(f"Licenses indices: {license_indices} \n Supply indices: {supply_indices} \n Distributor indices: {distributor_indices} \n Outsourcing indices: {outsourcing_indices} \n Service indices: {service_indices}")
+        all_contract_numbers_and_titles(relevant_contract_indices)
     
     def generate_word():  
         #aufbereiten von text
@@ -138,10 +170,29 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
 #    get_lexiconterms()
 
+    def word_of_contract_listing(text: str):  
+    
+        doc = Document()
 
+        doc.add_page_break()
 
+        doc.add_heading(f"All Contracts and their index put together", level = 1)
 
+        doc.add_paragraph(text)
 
+        doc.save(fr"C:\Users\finnd\Documents\Wirtschaftsinformatik\Informatik\Projektarbeit\Listing_contracts\Listing_of_all_contracts_plus_index_frthistime.docx")
+
+    def all_contract_numbers_and_titles(relevant_contracts: list) -> str:
+        text_liste: list = []
+        for i in range(len(relevant_contracts)):               #Ausgabe aller Titel aller Verträge
+            list; contract = summary['data'][relevant_contracts[i] - 1]
+            str; current_contract = contract.get('title')
+            text_liste.append(f"Title of contract no. {relevant_contracts[i]} {current_contract}")
+        fertige_ausgabe: str = "\n\n".join(text_liste)
+        word_of_contract_listing(fertige_ausgabe)
+
+create_contract_list()
+#all_contract_numbers_and_titles()
 
 
     # create_contract_list()
