@@ -1,5 +1,6 @@
 import pdfplumber 
 import re
+from process_data import creation_of_dictionary
 
 #dateiauswahl fenster
 
@@ -27,7 +28,7 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
     with pdfplumber.open(pdf_path) as pdf:
     #    text: str = pdf.pages[0].extract_text()
         possible_contract_classification = pdf.pages[0].search(r"Distributor|Service|Outsourcing|License|Supply", case= False)
-        for i in range(1, len(pdf.pages)):
+        for i in range(0, len(pdf.pages)):
             contract_sites.append([pdf.pages[i].extract_text(), pdf.pages[i].page_number])
             pdf.pages[i].close()
 
@@ -48,6 +49,12 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
     #print(pdf.metadata)
     #print(possible_contract_classification[0]["text"])
     #print(metadata_contract)
+    #print(metadata_contract["listlist_of_pages"][17][1])
+    #print(len(pdf.pages))
+
+    #print(metadata_contract)
+    creation_of_dictionary(metadata_contract)
+    
     return metadata_contract
         
 def extract_potential_table(): #should check for table in the document and extract it if existing
