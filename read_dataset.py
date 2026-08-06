@@ -194,64 +194,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         fertige_ausgabe: str = "\n\n".join(text_liste)
         word_of_contract_listing(fertige_ausgabe)
 
-#create_contract_list()
-#all_contract_numbers_and_titles()
 
-    def dataframe_construction_td_idf(): #implements necessary DatFrames for relevant words
-        relevant_contracts: list = [0, 2, 16, 17, 24, 27, 31, 39, 41, 43, 53, 54, 55, 62, 65, 67, 68, 69, 70, 71, 75, #indices of the relevant contract types
-                                77, 78, 85, 88, 90, 91, 94, 99, 101, 103, 107, 111, 112, 115, 116, 120, 122, 132,
-                                134, 136, 146, 153, 155, 158, 160, 163, 164, 167, 169, 171, 174, 175, 183, 188, 191,
-                                194, 198, 200, 216, 219, 223, 224, 228, 230, 232, 235, 237, 239, 241, 242, 247, 248,
-                                249, 254, 260, 262, 263, 265, 266, 280, 293, 297, 304, 306, 309, 310, 311, 313, 315,
-                                325, 327, 337, 343, 345, 348, 356, 359, 366, 368, 369, 376, 378, 379, 385, 388, 391,
-                                396, 398, 399, 400, 406, 413, 417, 429, 432, 436, 443, 447, 455, 457, 458, 460, 469,
-                                471, 474, 478, 481, 486, 493, 498, 500, 505, 506]
-
-    
-        service_indices = [17, 24, 48, 53, 55, 58, 75, 78, 103, 122, 160, 179, 200, 210, 212, 235, 248, 278, 285, 309, 325,
-                        356, 385, 406, 455, 457, 460, 506]
-    
-        distributor_indices = [0, 67, 85, 88, 89, 101, 120, 134, 136, 153, 155, 164, 167, 198, 216, 240, 260, 262, 265, 297,
-                           310, 311, 340, 345, 359, 366, 369, 379, 447, 458, 471, 493]
-    
-        supply_indices = [2, 16, 54, 70, 107, 115, 143, 169, 183, 188, 219, 239, 242, 313, 376, 378, 399, 417]
-
-        outsourcing_indices = [41, 62, 65, 68, 69, 99, 132, 175, 266, 304, 337, 348, 391, 400, 443, 478, 481, 486]
-    
-        license_indices = [27, 39, 43, 77, 94, 112, 146, 158, 163, 174, 191, 228, 230, 247, 249, 280, 306, 327, 343,
-                        368, 388, 396, 398, 413, 429, 432, 436, 445, 469, 474, 489, 500, 505]
-
-        
-        dataframe_foundation = []
-
-        for i in range(len(service_indices)):
-            output: dict = summary['data'][service_indices[i]] #erstellen von dictionary, dass Grundlage für DF bildet
-            str; contract_title = output.get('title')
-            paragraphs: list = (output.get('paragraphs'))
-            for item in paragraphs:
-                str; content = item['context']
-            dataframe_foundation.append({
-                "contract": f"C{service_indices[i]+1}", 
-                "title": contract_title, #title Zeile
-                "text": content #text Zeile
-            })
-        df = pd.DataFrame(dataframe_foundation)
-        #df = df.set_index("contract")
-        df["words"] = df["text"].apply(lambda x: pre_processing(text_given=x, solo_words=True, remove_stop_words=True)) #Erstellung einer von stop_words gefilterten Wort Zeile
-        #save = df.iloc[1]["words"]
-        df["words"] = df["words"].apply(set)
-        amount_of_contracts = len(df)
-        df_words = df.explode("words").dropna(subset=["words"]) #entfernt leere Zeilen, allerdings nur für Kategorie words
-        word_share_in_contracts = df_words["words"].value_counts() #erstellen Pandas series mit Wert we oft Wort über Verträge verteilt vorkommt
-        word_statistics = word_share_in_contracts.reset_index() #erstellt einen DatFrame aus dieser Series
-        word_statistics.columns = ["word", "share"] #bennent die Spalten des DataFrames
-        word_statistics["contract_proportion"] = amount_of_contracts/word_statistics["share"]
-        word_statistics["idf-value"] = numpy.log10(word_statistics["contract_proportion"])
-        #word_statistics = word_statistics.loc[word_statistics["share"]>=2].copy() #rausfiltern von einmal vorkommenden wörtern um "Company-Names und Co zu vermeiden, oder word dopplungen jeweils mit KI rausfiltern"
-        print(word_statistics)
-        
-
-dataframe_construction_td_idf()
 
 
 

@@ -5,6 +5,7 @@ from collections import Counter #musste installiert werden
 import pandas as pd #musste installiert werden
 import nltk #musste installiert werden - momentan noch nicht in benutzung
 from nltk.corpus import stopwords #nicht in Benutzung
+#from pandas_save import pre_processing, dataframe_construction_td_idf
 
 # sentence_dataset_represantation_example = {
      
@@ -271,6 +272,8 @@ def td_idf(words_in_total: int):
     #+ positive dämpfung + prompt einbauen 
 
     #(+ optional bereits aufsetzen von DataFrame strukturen)
+
+    
      
     return None
 

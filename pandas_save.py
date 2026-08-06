@@ -118,18 +118,18 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         #save = df.iloc[1]["words"]
 
         #calculation of tf
-
         amount_of_words = df.iloc[[1]][["contract", "words"]].copy() #kopieren einer zeile des dataframes -> muss ersetzt werden
         amount_of_words["amount"] = len(df.iloc[1]["words"]) #anzahl wörter gesamt
+        general_amount_of_words: int = amount_of_words["amount"].iloc[0] #kopieren des werts von gesamtanzahl wörter mit iloc[0] auch int typ, ansonsten pandas series
+
         #beispielwert eins durch spezifischen index ersetzen, bzw. vertragsdokument + gibt jedem word eine einzelne zeile 
+
         tf_single_words = amount_of_words.explode("words") #jedes einzelne wort bekommt einzelne zeile
         frequence_words = tf_single_words.groupby(["words"]).size() #anzahl der einzelnen gleichen wörter mit zeile als pandas series
         tf_df = frequence_words.reset_index()
         tf_df.columns = ["word", "amount_of_word"]
-        merged_df = pd.merge(tf_df, tf_single_words, left_on= "word", right_on= "words", how="inner") #evtl. unnötig da oben schon gesamtanzahl gegeben
-        merged_df = merged_df.drop(columns=["words"])
-        #tf_df = tf_df.merge(amount_of_words, on="word") #merging der zwei datframes und zusammenführen der beiden werte
-        merged_df["tf"] = merged_df["amount_of_word"]/merged_df["amount"] #calculation of tf
+        tf_df["word_amount_overall"] = general_amount_of_words
+        tf_df["tf"] = tf_df["amount_of_word"]/tf_df["word_amount_overall"] #calculation of tf
 
 
 
@@ -144,18 +144,19 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         word_statistics["idf-value"] = numpy.log10(word_statistics["contract_proportion"])
         #word_statistics = word_statistics.loc[word_statistics["share"]>=2].copy() #rausfiltern von einmal vorkommenden wörtern um "Company-Names und Co zu vermeiden, oder word dopplungen jeweils mit KI rausfiltern"
         print(word_statistics)
-        print(merged_df)
+        print(tf_df)
 
         #calculation of TF-IDF
-
-        merged_all_in_all = pd.merge(merged_df, word_statistics, on="word")
+        merged_all_in_all = pd.merge(tf_df, word_statistics, on="word")
         merged_all_in_all["TF-IDF"] = merged_all_in_all["tf"]*merged_all_in_all["idf-value"]
         merged_all_in_all = merged_all_in_all.drop_duplicates(subset=["word"])
-        #merged_all_in_all = merged_all_in_all.set_index("word", drop=False)
         merged_all_in_all = merged_all_in_all.sort_values(by="TF-IDF", ascending=False)
 
 
         print(merged_all_in_all)
+
+        with pd.option_context("display.max_rows", None):
+            print(merged_all_in_all)
 
         #merge of tf and idf
 
