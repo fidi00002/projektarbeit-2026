@@ -26,11 +26,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         parentcompany_of_contract: str
         content: str 
 
-        not_relevant = re.compile(fr"(Section|Clause|Schedule|Article|Exhibit|\((\w+|\d*)\)|\d*[.,;:_-]*\d*[,.-;:_]+\d*|[\$\%\&]+|I+|name|title|\d+|usd|co(?:.)?|ltd(?:.)?|\w{1})")
-
-        relevant = re.compile(fr"\w{2,}")
-
-        #relevant = re.compile(fr"\w{2,}")
+        not_relevant = re.compile(fr"\b(Section|Clause|Schedule|Article|Exhibit|\((\w+|\d*)\)|\d*[.,;:_-]*\d*[,.-;:_]+\d*|[\$\%\&]+|I+|name|title|\d+|usd|co(?:.)?|ltd(?:.)?|i{{2,}}\b)") #rausfiltern von irrelevanten Zeichen und Bezeichnungen, also auch Absatzmarkern
 
         stop_words = set(stopwords.words('english'))
 
@@ -48,7 +44,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
         if solo_words: #unterteilt text in wörter
 
-            content_replace = re.sub('\n|\t|\(|\)|"', "", content_strip) #entfernt newline and tab zeichen im text
+            content_replace = re.sub('\n|\t|\(|\)|\"|\'|\.|\/|&|-', "", content_strip) #entfernt newline and tab zeichen im text, als auch irrelevante Zeichen an Wörtern wie "'/&-()
 
             split_words = re.split(r"\s", content_replace) #teilt text nach leerzeichen
 
@@ -58,7 +54,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
             if remove_stop_words:
                 
-                split_words_filtered = [word for word in split_words if word not in stop_words and not relevant.search(word) and not not_relevant.search(word)]
+                split_words_filtered = [word for word in split_words if word not in stop_words and not not_relevant.search(word) and not (len(word) == 1)] #schmeißt alle stopwords, irrelevanten Zeichen, sowie einzelne Buchstaben raus
 
                 return split_words_filtered
 
