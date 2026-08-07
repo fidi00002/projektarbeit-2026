@@ -26,7 +26,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         parentcompany_of_contract: str
         content: str 
 
-        not_relevant = re.compile(fr"\b(Section|Clause|Schedule|Article|Exhibit|\((\w+|\d*)\)|\d*[.,;:_-]*\d*[,.-;:_]+\d*|[\$\%\&]+|I+|name|title|\d+|usd|co(?:.)?|ltd(?:.)?|i{{2,}}\b)") #rausfiltern von irrelevanten Zeichen und Bezeichnungen, also auch Absatzmarkern
+        not_relevant = re.compile(fr"\b(Section|Clause|Schedule|Article|Exhibit|\((\w+|\d*)\)|\d*[.,;:_-]*\d*[,.-;:_]+\d*|[\$\%\&]+|I+|name|title|\d+|usd|co(?:.)?|ltd(?:.)?|i{{2,}}|\d*\w*\d+\w*\d*\b)") #rausfiltern von irrelevanten Zeichen und Bezeichnungen, also auch Absatzmarkern
 
         stop_words = set(stopwords.words('english'))
 
@@ -54,7 +54,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
             if remove_stop_words:
                 
-                split_words_filtered = [word for word in split_words if word not in stop_words and not not_relevant.search(word) and not (len(word) == 1)] #schmeißt alle stopwords, irrelevanten Zeichen, sowie einzelne Buchstaben raus
+                split_words_filtered = [word for word in split_words if word not in stop_words and not not_relevant.search(word) and not (len(word) == 1 and word.isalpha())] #schmeißt alle stopwords, irrelevanten Zeichen, sowie einzelne Buchstaben raus
 
                 return split_words_filtered
 
