@@ -183,16 +183,29 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
         doc.add_paragraph(text)
 
-        doc.save(fr"C:\Users\finnd\Documents\Wirtschaftsinformatik\Informatik\Projektarbeit\Listing_contracts\Listing_of_all_contracts_plus_index_frthistime.docx")
+        doc.save(fr"C:\Users\finnd\Documents\Wirtschaftsinformatik\Informatik\Projektarbeit\Listing_contracts\Test_contracts.docx")
 
     def all_contract_numbers_and_titles(relevant_contracts: list) -> str:
         text_liste: list = []
         for i in range(len(relevant_contracts)):               #Ausgabe aller Titel aller Verträge
-            list; contract = summary['data'][relevant_contracts[i] - 1]
+            list; contract = summary['data'][relevant_contracts[i]]
             str; current_contract = contract.get('title')
             text_liste.append(f"Title of contract no. {relevant_contracts[i]} {current_contract}")
         fertige_ausgabe: str = "\n\n".join(text_liste)
         word_of_contract_listing(fertige_ausgabe)
+
+relevant_contracts: list = [0, 2, 16, 17, 24, 27, 31, 39, 41, 43, 53, 54, 55, 62, 65, 67, 68, 69, 70, 71, 75, #indices of the relevant contract types
+                                77, 78, 85, 88, 90, 91, 94, 99, 101, 103, 107, 111, 112, 115, 116, 120, 122, 132,
+                                134, 136, 146, 153, 155, 158, 160, 163, 164, 167, 169, 171, 174, 175, 183, 188, 191,
+                                194, 198, 200, 216, 219, 223, 224, 228, 230, 232, 235, 237, 239, 241, 242, 247, 248,
+                                249, 254, 260, 262, 263, 265, 266, 280, 293, 297, 304, 306, 309, 310, 311, 313, 315,
+                                325, 327, 337, 343, 345, 348, 356, 359, 366, 368, 369, 376, 378, 379, 385, 388, 391,
+                                396, 398, 399, 400, 406, 413, 417, 429, 432, 436, 443, 447, 455, 457, 458, 460, 469,
+                                471, 474, 478, 481, 486, 493, 498, 500, 505, 506]
+
+Test_Vertraege: list = [67, 345, 265, 436, 306, 146, 337, 99, 391, 385, 356, 248, 378, 169, 16]
+
+all_contract_numbers_and_titles(Test_Vertraege)
 
 
 
