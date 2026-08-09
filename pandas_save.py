@@ -157,13 +157,16 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         merged_all_in_all = pd.merge(tf_df, word_statistics, on="word")
         merged_all_in_all["TF-IDF"] = merged_all_in_all["tf"]*merged_all_in_all["idf-value"]
         merged_all_in_all = merged_all_in_all.drop_duplicates(subset=["word"])
+
+        merged_all_in_all = merged_all_in_all[merged_all_in_all["TF-IDF"] != 0] #removes every row where the 'TF-IDF' value is equal to zero
+
         merged_all_in_all = merged_all_in_all.sort_values(by="TF-IDF", ascending=False)
 
 
         print(merged_all_in_all)
 
-        with pd.option_context("display.max_rows", None):
-            print(merged_all_in_all)
+        #with pd.option_context("display.max_rows", None):
+        print(merged_all_in_all)
 
         #merge of tf and idf
 
