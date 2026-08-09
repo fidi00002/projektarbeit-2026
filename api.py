@@ -2,11 +2,12 @@ import openai
 from openai import OpenAI
 import json
 from read_dataset import gain_access
+import re
 
 #WICHTIG: VOR UPLOAD TO GITHUB IMMER RAUSLÖSCHEN
 Chat_GPT_Luna_Key: str = ""
 
-def evaluate_primary_subjects(contract: str = None):
+def evaluate_primary_subjects(contract: str = None, name: str = None):
     content: str
     contract_type: str
     i: int = 0
@@ -15,6 +16,11 @@ def evaluate_primary_subjects(contract: str = None):
         content = contract
     else:
         contract_type, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
+
+    if name is not None:
+        stated_name = name
+    else:
+        stated_name = "Electric"
 
     client = OpenAI(api_key="")
 
@@ -27,7 +33,6 @@ def evaluate_primary_subjects(contract: str = None):
             instructions = "Du bist ein Contract Analysis Tool und richtest in dieser Analyse deinen Fokus auf die einzelnen Vertragsparteien:. \n"
                 "Wie heißen diese, bitte gib den Namen in kurzer Form an ohne irgendwelchen zusätzlichen Infos, allerdings schreib kurz die Rolle die diese Partei im Vertrag einnimmt in Klammern '()' hintendran?" \
                 "Welche Haupt- und Nebenleistungspflichten haben diese und was sind die jeweiligen Rechte und Pflichten dieser in diesem Vertragsverhältnis"
-                "Nachdem du diese Daten herausgefunden hast begründest diese mit entsprechenden Textverweisen. \n"
                 "Bitte erstelle die einzelne Verweise und Kategorien möglichst übersichtlich, dass man diese einfach lesen und verstehen kann"
                 "und diese übersichtlich dargestellt und gestaltet sind.", #noch reinschreiben das gut geordnete ausgabe sein soll
             reasoning={ #wie sehr soll Luna nachdenken
@@ -126,12 +131,15 @@ def evaluate_primary_subjects(contract: str = None):
     Company_1 = result_dictionary["contract_partners"][0]
     Company_2 = result_dictionary["contract_partners"][1]
 
-    print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{Company_1['name']} \n{Company_2['name']}")
-    print(f"{Company_1['name']} hat folgende Verpflichtungen: \nHauptleistungspflichten: ")
-    for i in range(len(Company_1['main_obligations'])):
-        print(f"{i}. {Company_1['main_obligations'][i]}")
+    if can_distinct_individual(Company_1['name'], Company_2['name'], stated_name):
+        print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{Company_1['name']} \n{Company_2['name']}")
+        print(f"{Company_1['name']} hat folgende Verpflichtungen: \nHauptleistungspflichten: ")
+        for i in range(len(Company_1['main_obligations'])):
+            print(f"{i}. {Company_1['main_obligations'][i]}")
 
-    return result_dictionary
+        return result_dictionary
+    else:
+        print("Stated Company either false or inaccurate, try again by stating the name more detailed")
     #Identification_of_output = response.id #gibt dem output jeweils eine konkrete zuordnung, kann neue anfrage mittels previous_response_id mit alter verbinden
     #Token_verbrauch = response.usage
     #eventuell in Prompt Caching schauen, wenn immer wieder den gleichen StandardText am mitschicken -> kosten sparen
@@ -300,6 +308,30 @@ def contract_summary(contract: str = None):
 
     return contract_summary
 
-#evaluate_primary_subjects()
+def can_distinct_individual(company1: str, company2: str, stated_individual: str):
+    company1 = remove_unnecessary(company1)
+    company2 = remove_unnecessary(company2)
+    stated_individual = remove_unnecessary(stated_individual)
+
+    counter = 0
+
+    if stated_individual in company1:
+        counter += 1
+
+    if stated_individual in company2:
+        counter += 1
+
+    return counter == 1
+
+def remove_unnecessary(string: str):
+    string = string.strip()
+    string = string.lower()
+    string = re.sub(r"\s+", "", string)
+    return string
+    
+
+
+
+evaluate_primary_subjects()
 #determine_contract_type()
 #contract_summary()
