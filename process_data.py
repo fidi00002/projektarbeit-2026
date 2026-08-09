@@ -117,12 +117,17 @@ def creation_of_dictionary(metadata_contract: dict) -> None:
         for i in range(len(splitup_text)):
             sentence_id: str = fr"""S{metadata_contract["listlist_of_pages"][z][1]}L{i}"""
             sentence_dataset[f"{sentence_id}"] = {}
-            sentence_dataset [f"{sentence_id}"]["id"] = sentence_id
-            single_words_list: list = filter(splitup_text[i], sentence_id)
+            filter(splitup_text[i], sentence_id) #adds list for financial, legal and operative risks
             sentence_dataset [f"{sentence_id}"]["text"] = splitup_text[i]
             sentence_dataset [f"{sentence_id}"]["page"] = metadata_contract["listlist_of_pages"][z][1]
-            df = pd.DataFrame(sentence_dataset)
-    print(sentence_dataset)
+    df = pd.DataFrame.from_dict(sentence_dataset, orient="index")
+    df["risk_words_general"] = df[["financial_risk_words", "legal_risk_words", "operative_risk_words"]].apply(lambda row: sum(row, []), axis = 1) #zusammenfassen der einzelnen risk_words-spalten mittels sum auf listen '[]' und zeilen bezogen und axis=1 bedeutet zeile für zeile
+    relevant_df = df[df["risk_words_general"].apply(lambda x: len(x)>0)] #neues df bei denen nur zeilen übernommen werden, welche risk words abgespeichert haben
+    # with pd.option_context("display.max_rows", None):
+    #     print(relevant_df)
+    # print(relevant_df.columns)
+    # print(df.columns)
+        #print(df)
 
 
          
@@ -167,12 +172,9 @@ def filter(text: str = "", sentence_id: str = ""): # filters the contract accord
                 # possible_operative_arguments.append(content_further_seperated[i])
                 # possible_operative_arguments_words.append(operative_word.group())
 
-    if financial_list:
-        sentence_dataset [f"{sentence_id}"]["financial_risk_words"] = financial_list
-    if legal_list:
-        sentence_dataset[f"{sentence_id}"]["legal_risk_words"] = legal_list
-    if operative_list:
-        sentence_dataset [f"{sentence_id}"]["operative_risk_words"] = operative_list
+    sentence_dataset[f"{sentence_id}"]["financial_risk_words"] = financial_list
+    sentence_dataset[f"{sentence_id}"]["legal_risk_words"] = legal_list
+    sentence_dataset[f"{sentence_id}"]["operative_risk_words"] = operative_list
 
     return None
 
@@ -260,24 +262,6 @@ def setting_dic_details():
 
     # relative_word_percentage = counter_current_word/totalcount_words
 
-
-def td_idf(words_in_total: int):
-
-    #wie oft einzelnes wort allgemein vorkommt durch allgemeine anzahl an wörtern
-
-    #+ berechen einzelnes wort und allgemeine risikowörter
-
-    #+ co-occurence berechnen: wieviele riskowörter in einem satz
-
-    #+ positive dämpfung + prompt einbauen 
-
-    #(+ optional bereits aufsetzen von DataFrame strukturen)
-
-    
-     
-    return None
-
-#most_used_words() #-> needed for further construction of pre-processing filters
 
 
 
