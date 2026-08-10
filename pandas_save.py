@@ -70,7 +70,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
             return content_further_seperated
 
 
-    def dataframe_construction_td_idf(): #implements necessary DatFrames for relevant words
+    def dataframe_construction_td_idf(metadata_contract: dict): #implements necessary DatFrames for relevant words
         relevant_contracts: list = [0, 2, 17, 24, 27, 31, 39, 41, 43, 53, 54, 55, 62, 65, 68, 69, 70, 71, 75, #indices of the relevant contract types
                                 77, 78, 85, 88, 90, 91, 94, 101, 103, 107, 111, 112, 115, 116, 120, 122, 132,
                                 134, 136, 153, 155, 158, 160, 163, 164, 167, 171, 174, 175, 183, 188, 191,
@@ -120,19 +120,28 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
                 "text": content #text Zeile
             })
         df = pd.DataFrame(dataframe_foundation)
+
+        sentence_dataset = {}
+
+        for z in range(len(metadata_contract["listlist_of_pages"])):
+            splitup_text: str = pre_processing(text_given = metadata_contract["listlist_of_pages"][z][0])
+            page_number = metadata_contract["listlist_of_pages"][z][1]
+            for i in range(len(splitup_text)):
+                sentence_id = f"S{page_number}L{i}" #durch Variable ersetzt wie Alex vorgeschlagen -> noch in process_data übernehmen
+                sentence_dataset[sentence_id] = {}
+                sentence_dataset[sentence_id]["id"] = sentence_id
+                sentence_dataset [sentence_id]["text"] = splitup_text[i]
+                sentence_dataset [sentence_id]["page"] = page_number #durch Variable ersetzt wie Alex vorgeschlagen -> noch in process_data übernehmen
+        df = pd.DataFrame.from_dict(sentence_dataset, orient="index")      
+
         #df = df.set_index("contract")
         df["words"] = df["text"].apply(lambda x: pre_processing(text_given=x, solo_words=True, remove_stop_words=True)) #Erstellung einer von stop_words gefilterten Wort Zeile
         #save = df.iloc[1]["words"]
 
         #calculation of tf
-        amount_of_words = df.iloc[[1]][["contract", "words"]].copy() #kopieren einer zeile des dataframes -> muss ersetzt werden
-        amount_of_words["amount"] = len(df.iloc[1]["words"]) #anzahl wörter gesamt
-        general_amount_of_words: int = amount_of_words["amount"].iloc[0] #kopieren des werts von gesamtanzahl wörter mit iloc[0] auch int typ, ansonsten pandas series
-
-        #beispielwert eins durch spezifischen index ersetzen, bzw. vertragsdokument + gibt jedem word eine einzelne zeile 
-
-        tf_single_words = amount_of_words.explode("words") #jedes einzelne wort bekommt einzelne zeile
-        frequence_words = tf_single_words.groupby(["words"]).size() #anzahl der einzelnen gleichen wörter mit zeile als pandas series
+        all_words = df["words"].explode() #pandas series jedes wort einzelner eintrag
+        general_amount_of_words: int = len(all_words) #zählen alle einträge für amount of all words
+        frequence_words = all_words.value_counts()
         tf_df = frequence_words.reset_index()
         tf_df.columns = ["word", "amount_of_word"]
         tf_df["word_amount_overall"] = general_amount_of_words
@@ -141,17 +150,31 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
 
         #calculation of IDF
-        df["words"] = df["words"].apply(set)
-        amount_of_contracts = len(df)
-        df_words = df.explode("words").dropna(subset=["words"]) #entfernt leere Zeilen, allerdings nur für Kategorie words
+        idf_foundation = [] #entwurf des vorherigen dataframes diesmal allerdings nur als foundation für den idf score
+        for i in range(len(service_indices)): #evtl. später zu globalem score ändern
+            output = summary["data"][service_indices[i]]
+            paragraphs = output.get("paragraphs") 
+            for item in paragraphs:
+                content = item["context"]
+            idf_foundation.append({
+                "contract": f"C{service_indices[i] + 1}",
+                "text": content
+            })
+        idf_df = pd.DataFrame(idf_foundation)
+        idf_df["words"] = idf_df["text"].apply(lambda x: pre_processing(text_given = x, solo_words= True, remove_stop_words= True))
+            
+
+        idf_df["words"] = idf_df["words"].apply(set)
+        amount_of_contracts = len(idf_df)
+        df_words = idf_df.explode("words").dropna(subset=["words"]) #entfernt leere Zeilen, allerdings nur für Kategorie words
         word_share_in_contracts = df_words["words"].value_counts() #erstellen Pandas series mit Wert we oft Wort über Verträge verteilt vorkommt
         word_statistics = word_share_in_contracts.reset_index() #erstellt einen DatFrame aus dieser Series
         word_statistics.columns = ["word", "share"] #bennent die Spalten des DataFrames
         word_statistics["contract_proportion"] = amount_of_contracts/word_statistics["share"]
         word_statistics["idf-value"] = numpy.log10(word_statistics["contract_proportion"])
         #word_statistics = word_statistics.loc[word_statistics["share"]>=2].copy() #rausfiltern von einmal vorkommenden wörtern um "Company-Names und Co zu vermeiden, oder word dopplungen jeweils mit KI rausfiltern"
-        print(word_statistics)
-        print(tf_df)
+        # print(word_statistics)
+        # print(tf_df)
 
         #calculation of TF-IDF
         merged_all_in_all = pd.merge(tf_df, word_statistics, on="word")
@@ -160,14 +183,20 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
         merged_all_in_all = merged_all_in_all[merged_all_in_all["TF-IDF"] != 0] #removes every row where the 'TF-IDF' value is equal to zero
 
-        merged_all_in_all = merged_all_in_all.sort_values(by="TF-IDF", ascending=False)
+        #jedem wort, id + zugehörige page zuteilen
 
+        word_locations = (df[["id", "page", "words"]].explode("words").rename(columns={"words": "word"}))
+        word_locations = word_locations.drop_duplicates(subset=["id", "word"])
 
-        print(merged_all_in_all)
+        tf_idf_relevant = pd.merge(merged_all_in_all[["word", "TF-IDF"]], word_locations, on="word", how="inner")
 
-        #with pd.option_context("display.max_rows", None):
-        print(merged_all_in_all)
+        # print(tf_idf_relevant)
+
+        # with pd.option_context("display.max_rows", None):
+        #     print(tf_idf_relevant)
+
+        return tf_idf_relevant
 
         #merge of tf and idf
 
-dataframe_construction_td_idf()
+#dataframe_construction_td_idf()

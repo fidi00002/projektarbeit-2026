@@ -1,6 +1,5 @@
 #from read_dataset import gain_access
 import re
-from risk_scaling import risk_field, risk_scoring
 from collections import Counter #musste installiert werden
 import pandas as pd #musste installiert werden
 import nltk #musste installiert werden - momentan noch nicht in benutzung
@@ -21,7 +20,7 @@ from nltk.corpus import stopwords #nicht in Benutzung
 
 # }
 
-sentence_dataset = {}
+sentence_dataset = {} #benutztes dict in creation_of_dictionary
 
 dataset_content = {
 
@@ -111,21 +110,40 @@ def pre_processing(*, i: int = 1, text_given = str, solo_words: bool = False, re
         return content_further_seperated
     
 #an dictionary structure mit einzelnen seiten denken
-def creation_of_dictionary(metadata_contract: dict) -> None:
+def creation_of_dictionary(metadata_contract: dict) -> pd.DataFrame:
     for z in range(len(metadata_contract["listlist_of_pages"])):
         splitup_text: str = pre_processing(text_given = metadata_contract["listlist_of_pages"][z][0])
         for i in range(len(splitup_text)):
             sentence_id: str = fr"""S{metadata_contract["listlist_of_pages"][z][1]}L{i}"""
             sentence_dataset[f"{sentence_id}"] = {}
+            sentence_dataset[f"{sentence_id}"]["id"] = sentence_id
             filter(splitup_text[i], sentence_id) #adds list for financial, legal and operative risks
             sentence_dataset [f"{sentence_id}"]["text"] = splitup_text[i]
             sentence_dataset [f"{sentence_id}"]["page"] = metadata_contract["listlist_of_pages"][z][1]
     df = pd.DataFrame.from_dict(sentence_dataset, orient="index")
     df["risk_words_general"] = df[["financial_risk_words", "legal_risk_words", "operative_risk_words"]].apply(lambda row: sum(row, []), axis = 1) #zusammenfassen der einzelnen risk_words-spalten mittels sum auf listen '[]' und zeilen bezogen und axis=1 bedeutet zeile für zeile
     relevant_df = df[df["risk_words_general"].apply(lambda x: len(x)>0)] #neues df bei denen nur zeilen übernommen werden, welche risk words abgespeichert haben
+
+    financial_df = (relevant_df[["id", "page", "text", "financial_risk_words"]].explode("financial_risk_words").rename(columns={"financial_risk_words": "word"}).dropna(subset=["word"]))
+    financial_df["risk_category"] = "financial"
+
+    legal_df = (relevant_df[["id", "page", "text", "legal_risk_words"]].explode("legal_risk_words").rename(columns={"legal_risk_words": "word"}).dropna(subset=["word"]))
+    legal_df["risk_category"] = "legal"
+
+    operative_df = (relevant_df[["id", "page", "text", "operative_risk_words"]].explode("operative_risk_words").rename(columns={"operative_risk_words": "word"}).dropna(subset=["word"]))
+    operative_df["risk_category"] = "operative"
+
+    risk_word_df = pd.concat([financial_df, legal_df, operative_df], ignore_index=True)
+
+    #noch zusammenfügen von kategorien programmieren, also wenn wort doppelt vorkommt also in mehreren kategorien diese zusammenfügen statt dopplungen zu entfernen
+
+    risk_word_df = risk_word_df.drop_duplicates(subset=["id", "word", "risk_category"])
+
     # with pd.option_context("display.max_rows", None):
-    #     print(relevant_df)
-    # print(relevant_df.columns)
+    #     print(risk_word_df)
+
+    return risk_word_df
+    #print(relevant_df.columns)
     # print(df.columns)
         #print(df)
 

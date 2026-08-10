@@ -1,6 +1,8 @@
 import pdfplumber 
 import re
 from process_data import creation_of_dictionary
+from pandas_save import dataframe_construction_td_idf
+import pandas as pd
 
 #dateiauswahl fenster
 
@@ -44,18 +46,18 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
     if possible_contract_classification[0]["text"].lower() in file_name.lower():
         probability_of_correctness += 0.25
     metadata_contract["correctness_probability"] = probability_of_correctness
-    #print(contract_sites)
-    #print(contract_sites[4][1],  "\n",  contract_sites[16][0], "\n", contract_sites[1][0], "\n", contract_sites[9][1])
-    #print(pdf.metadata)
-    #print(possible_contract_classification[0]["text"])
-    #print(metadata_contract)
-    #print(metadata_contract["listlist_of_pages"][17][1])
-    #print(len(pdf.pages))
 
-    #print(metadata_contract)
-    creation_of_dictionary(metadata_contract)
+    risk_df = creation_of_dictionary(metadata_contract)
+    tfidf_df = dataframe_construction_td_idf(metadata_contract)
+
+    ultimate_info_df = pd.merge(risk_df, tfidf_df[["id", "word", "TF-IDF"]], on=["id", "word"], how="inner")
+
+    ultimate_info_df = ultimate_info_df.sort_values(by="TF-IDF", ascending=False)
+
+    with pd.option_context("display.max_rows", None):
+        print(ultimate_info_df)
     
-    return metadata_contract
+    return ultimate_info_df
         
 def extract_potential_table(): #should check for table in the document and extract it if existing
        # table: Table = pdf.pages[0].extract_table()
