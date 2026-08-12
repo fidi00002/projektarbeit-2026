@@ -197,6 +197,15 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
         return tf_idf_relevant
 
+    def grouping_by_max_tf_idf(ultimate_info_df: pd.DataFrame):
+        indice_of_highest_tf_idf_word = (ultimate_info_df.groupby(["id", "risk_category"])["TF-IDF"].idxmax()) #gruppe für satz pro category und sentence id für index mit höchstem wert index =! id
+        highest_word_df = ultimate_info_df.loc[indice_of_highest_tf_idf_word,["id", "risk_category", "word"]] #df mit wörtern von höchstem indice
+        highest_word_df = highest_word_df.rename(columns={"word": "word_for_max_tf_idf"}) #word spalten umbenannt
+        ultimate_info_df = (ultimate_info_df.groupby(["id", "page", "text", "risk_category"], as_index=False).agg(risk_words=("word", list), max_TF_IDF=("TF-IDF", "max"))) #risk wörter eines gleichen satzes zusammenfassen + nur höchster wert aus TF-IDF Spalte 
+        ultimate_info_df = pd.merge(ultimate_info_df, highest_word_df, on=["id", "risk_category"], how="left") #jetzt wort für highest tf-idf bestimmten und hinzufügen
+        ultimate_info_df = (ultimate_info_df.sort_values(by="max_TF_IDF", ascending=False).reset_index(drop=True)) #sortieren anhand von neuem tf-idf wert
+        return ultimate_info_df
+
         #merge of tf and idf
 
 #dataframe_construction_td_idf()

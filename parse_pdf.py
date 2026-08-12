@@ -3,6 +3,7 @@ import re
 from process_data import creation_of_dictionary
 from pandas_save import dataframe_construction_td_idf
 import pandas as pd
+from pandas_save import grouping_by_max_tf_idf
 
 #dateiauswahl fenster
 
@@ -51,13 +52,17 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
     tfidf_df = dataframe_construction_td_idf(metadata_contract)
 
     ultimate_info_df = pd.merge(risk_df, tfidf_df[["id", "word", "TF-IDF"]], on=["id", "word"], how="inner")
-
     ultimate_info_df = ultimate_info_df.sort_values(by="TF-IDF", ascending=False)
+
+    ultimate_info_df_with_groupings = grouping_by_max_tf_idf(ultimate_info_df)
 
     with pd.option_context("display.max_rows", None):
         print(ultimate_info_df)
-    
-    return ultimate_info_df
+
+    with pd.option_context("display.max_rows", None):
+        print(ultimate_info_df_with_groupings)
+
+    return ultimate_info_df_with_groupings
         
 def extract_potential_table(): #should check for table in the document and extract it if existing
        # table: Table = pdf.pages[0].extract_table()
