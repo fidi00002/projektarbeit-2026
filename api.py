@@ -20,7 +20,7 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
     if name is not None:
         stated_name = name
     else:
-        stated_name = "Electric"
+        stated_name = "Electric City Corp."
 
     client = OpenAI(api_key="")
 
@@ -31,8 +31,9 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
             input=f"Bitte analysiere mir den folgenden Vertrag anhand dessen Vertragsparteien und der zugehörigen Haupt-/Nebenleistungspflichten und allgemeienr \
             Recht und Pflichten dieser, und gib gleichzeitig Verweise auf deine gefundenen Passagen, um dieser zu belegen. Vertragsinhalt: {content}",
             instructions = "Du bist ein Contract Analysis Tool und richtest in dieser Analyse deinen Fokus auf die einzelnen Vertragsparteien:. \n"
-                "Wie heißen diese, bitte gib den Namen in kurzer Form an ohne irgendwelchen zusätzlichen Infos, allerdings schreib kurz die Rolle die diese Partei im Vertrag einnimmt in Klammern '()' hintendran?" \
-                "Welche Haupt- und Nebenleistungspflichten haben diese und was sind die jeweiligen Rechte und Pflichten dieser in diesem Vertragsverhältnis"
+                "Bitte identifiziere für beide Vertragsparteien den Namen und die jeweilige Rolle im Vertrag z.B. Distributor, Licensor, Licensee, Supplier, Customer oder eine andere Rolle, welche aus diesem Vertrag hervorgeht. Gib beides bitte getrennt voneinander." \
+                "Erfinde die Rolle auch nicht, sondern leite diese ausschließlich aus dem Verttrag ab."
+                "Welche Haupt- und Nebenleistungspflichten haben die jeweiligen Vertragspartner und was sind die jeweiligen Rechte und Pflichten von dieser in diesem Vertragsverhältnis"
                 "Bitte erstelle die einzelne Verweise und Kategorien möglichst übersichtlich, dass man diese einfach lesen und verstehen kann"
                 "und diese übersichtlich dargestellt und gestaltet sind.", #noch reinschreiben das gut geordnete ausgabe sein soll
             reasoning={ #wie sehr soll Luna nachdenken
@@ -56,6 +57,18 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
                                     "properties": {
                                         "name": {
                                             "type": "string"
+                                        },
+                                        "role": {
+                                            "type": "string"
+                                        },
+                                        "role_description": {
+                                            "type": "string"
+                                        },
+                                        "other_names": { #wird momentan noch nicht benutzt, eventuell später noch einbauen für genauere Zuordnung
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
                                         },
                                         "main_obligations":{ #Hauptleistungspflichten
                                             "type": "array",
@@ -84,6 +97,9 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
                                     },
                                     "required": [ #bestimmt dass diese Items gegeben sein müssen
                                         "name",
+                                        "role",
+                                        "role_description",
+                                        "other_names",
                                         "main_obligations",
                                         "secondary_obligations",
                                         "individual_rights",
@@ -131,13 +147,16 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
     Company_1 = result_dictionary["contract_partners"][0]
     Company_2 = result_dictionary["contract_partners"][1]
 
-    if can_distinct_individual(Company_1['name'], Company_2['name'], stated_name):
-        print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{Company_1['name']} \n{Company_2['name']}")
-        print(f"{Company_1['name']} hat folgende Verpflichtungen: \nHauptleistungspflichten: ")
+    distinct, relevant_company = can_distinct_individual(Company_1, Company_2, stated_name)
+
+    if distinct:
+        print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{Company_1['name']} mit der Rolle {Company_1['role']}, welche bedeutet {Company_1['role_description']} \n{Company_2['name']} mit der Rolle {Company_2['role']}, welche bedeutet {Company_1['role_description']}")
+        print(f"{relevant_company['name']} hat folgende Verpflichtungen: \nHauptleistungspflichten: ")
         for i in range(len(Company_1['main_obligations'])):
             print(f"{i}. {Company_1['main_obligations'][i]}")
+        print(f"{relevant_company}")
 
-        return result_dictionary
+        return relevant_company
     else:
         print("Stated Company either false or inaccurate, try again by stating the name more detailed")
     #Identification_of_output = response.id #gibt dem output jeweils eine konkrete zuordnung, kann neue anfrage mittels previous_response_id mit alter verbinden
@@ -308,30 +327,130 @@ def contract_summary(contract: str = None):
 
     return contract_summary
 
-def can_distinct_individual(company1: str, company2: str, stated_individual: str):
-    company1 = remove_unnecessary(company1)
-    company2 = remove_unnecessary(company2)
+def evaluation_of_ki_regarding_candidates(df, relevant_company, risk_category, relevant_scoring_prompt):
+    category_df = df[df["risk_category"] == risk_category].copy()
+    html_category_df = category_df.to_html(index=False) 
+
+    client = OpenAI(api_key="")
+
+    try:
+
+        response = client.responses.create(
+            model="gpt-5.6-luna",
+            instructions=f"Du bist ein Contract Analysis Tool \
+            Entscheide zunächst einmal für jede einzelne Zeile der übergebenen Tabelle für die Kategorie 'relevant', ob die jeweils angegebenen Sätze aus Sicht der Vertragspartei: {relevant_company} überhaupt relevant sind und ein Risiko für diese darstellen könnten \
+            Falls dies zutrifft bewerte die Kategorie 'relevant' mit True ansonsten mit False \
+            Falls du 'relevant' auf True gesetzt hast bewerte die Zeile anschließend orientiert anhand von folgendem Prompt: \
+            {relevant_scoring_prompt} \
+            Zusätzliche Anmerkungen: \
+            Ein hoher TF-IDF-Wert pro Satz bedeutet für das zugehörige Wort nicht automatisch ein hohes Risiko kann über den kompletten Vertrag hinweg betrachtet allerdings sehr prägend sein. \
+            Bewerte bitte primär den tatsächlichen Inhalt des Satzes \
+            Erfinde keine Risiken und allgemein nichts hinzu \
+            Gib eine kurze Begründung deines zugeteilten Risikoscores mit maximal 1-3 Sätzen",
+            input=f"Analysiere folgende Tabelle, welche zu einem Vertrag erstellt wurde: {html_category_df}",
+            reasoning={
+                "effort": "medium"
+            },
+            text={
+                "format": {
+                    "type": "json_schema", 
+                    "name": "risk_evaluation",
+                    "strict": True, #KI soll Format zwingend beibehalten
+                    "schema": {
+                        "type": "object", 
+                        "properties":{
+                            "results": { #angegebene Vertragspartner des Dokumentes
+                                "type": "array",
+                                "items": {
+                                    "type": "object", 
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "relevant": {
+                                            "type": "boolean"
+                                        },
+                                        "risk_value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 10,
+                                            "multipleOf": 0.1 #erlaubt KI eine Nachkommastelle zu benutzen
+                                        },
+                                        "reasoning": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [ #bestimmt dass diese Items gegeben sein müssen
+                                        "id",
+                                        "relevant",
+                                        "risk_value",
+                                        "reasoning"
+                                    ],   
+                                    "additionalProperties": False #die KI darf keine zusätzlichen Properties neben denen die definiert sind erzeugen                                                           
+                                }
+                            }
+                        },
+                        "required": [
+                            "results"
+                        ],   
+                        "additionalProperties": False #die KI darf keine zusätzlichen Properties neben denen die definiert sind erzeugen
+                    }  
+                },
+                "verbosity": "low" #gibt wieder wie lang bzw. ausführlich die Antwort sein soll
+            },
+            max_output_tokens=5000,
+            store=False 
+        )
+
+    except openai.RateLimitError:
+        print("Rate des aktuellen KI-Assistenten wurde überschritten")
+        return None
+
+    except openai.APIConnectionError:
+        print("Verbindung konnte nicht hergestellt werden")
+        return None
+
+    except openai.APIError as error:
+        print("Sonstiger Fehler aufgetreten:", error)
+        return None
+
+    results_dict = json.loads(response.output_text)
+
+    results = results_dict["results"]
+
+    for result in results:
+        df.loc[(df["id"] == result["id"]) & (df["risk_category"] == risk_category), "relevant"] = result["relevant"]
+        df.loc[(df["id"] == result["id"]) & (df["risk_category"] == risk_category), "risk_value"] = result["risk_value"]
+        df.loc[(df["id"] == result["id"]) & (df["risk_category"] == risk_category), "reasoning"] = result["reasoning"]
+
+    return df 
+
+def can_distinct_individual(company1: dict, company2: dict, stated_individual: str):
+    company1_name = remove_unnecessary(company1['name'])
+    company2_name = remove_unnecessary(company2['name'])
     stated_individual = remove_unnecessary(stated_individual)
 
-    counter = 0
+    match_1 = stated_individual in company1_name
+    match_2 = stated_individual in company2_name
 
-    if stated_individual in company1:
-        counter += 1
+    if match_1 and not match_2:
+        return True, company1
 
-    if stated_individual in company2:
-        counter += 1
+    if match_2 and not match_1:
+        return True, company2
 
-    return counter == 1
+    return False, None
 
 def remove_unnecessary(string: str):
     string = string.strip()
     string = string.lower()
     string = re.sub(r"\s+", "", string)
     return string
+
+def ordering_of_risk_words():
+    raise NotImplementedError("function hasn't been declared yet")
+
     
-
-
-
-evaluate_primary_subjects()
+#evaluate_primary_subjects()
 #determine_contract_type()
 #contract_summary()

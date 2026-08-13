@@ -4,6 +4,7 @@ from process_data import creation_of_dictionary
 from pandas_save import dataframe_construction_td_idf
 import pandas as pd
 from pandas_save import grouping_by_max_tf_idf
+from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates
 
 #dateiauswahl fenster
 
@@ -62,7 +63,20 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
     with pd.option_context("display.max_rows", None):
         print(ultimate_info_df_with_groupings)
 
-    return ultimate_info_df_with_groupings
+    ultimate_info_df_with_groupings["relevant"] = False
+    ultimate_info_df_with_groupings["risk_value"] = -1.0
+    ultimate_info_df_with_groupings["reasoning"] = ""
+
+    legal_prompt = "Berücksichtige insbesondere Haftung, Schadensersatz, (vorzeitige) Kündigungsrechte, Gewährleistungsrechte-/ und pflichten, unklar formulierte rechtliche Regelungen, beschränkungen ausschlüsse bestehender Rechte und unklar oder unsauber formulierte rechtliche Regelungen"
+
+    relevant_company = evaluate_primary_subjects()
+
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], "legal", legal_prompt)
+
+    with pd.option_context("display.max_rows", None):
+        print(ultimate_df_with_scoring)
+
+    return ultimate_df_with_scoring
         
 def extract_potential_table(): #should check for table in the document and extract it if existing
        # table: Table = pdf.pages[0].extract_table()
