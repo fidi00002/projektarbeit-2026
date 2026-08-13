@@ -147,7 +147,7 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
     Company_1 = result_dictionary["contract_partners"][0]
     Company_2 = result_dictionary["contract_partners"][1]
 
-    distinct, relevant_company = can_distinct_individual(Company_1, Company_2, stated_name)
+    distinct, relevant_company, irrelevant_company = can_distinct_individual(Company_1, Company_2, stated_name)
 
     if distinct:
         print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{Company_1['name']} mit der Rolle {Company_1['role']}, welche bedeutet {Company_1['role_description']} \n{Company_2['name']} mit der Rolle {Company_2['role']}, welche bedeutet {Company_1['role_description']}")
@@ -156,7 +156,7 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
             print(f"{i}. {Company_1['main_obligations'][i]}")
         print(f"{relevant_company}")
 
-        return relevant_company
+        return relevant_company, irrelevant_company
     else:
         print("Stated Company either false or inaccurate, try again by stating the name more detailed")
     #Identification_of_output = response.id #gibt dem output jeweils eine konkrete zuordnung, kann neue anfrage mittels previous_response_id mit alter verbinden
@@ -327,7 +327,7 @@ def contract_summary(contract: str = None):
 
     return contract_summary
 
-def evaluation_of_ki_regarding_candidates(df, relevant_company, risk_category, relevant_scoring_prompt):
+def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_company_role, irrelevant_company_name, irrelevant_company_role, risk_category, relevant_scoring_prompt):
     category_df = df[df["risk_category"] == risk_category].copy()
     html_category_df = category_df.to_html(index=False) 
 
@@ -338,7 +338,8 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company, risk_category, r
         response = client.responses.create(
             model="gpt-5.6-luna",
             instructions=f"Du bist ein Contract Analysis Tool \
-            Entscheide zunächst einmal für jede einzelne Zeile der übergebenen Tabelle für die Kategorie 'relevant', ob die jeweils angegebenen Sätze aus Sicht der Vertragspartei: {relevant_company} überhaupt relevant sind und ein Risiko für diese darstellen könnten \
+            Entscheide zunächst einmal für jede einzelne Zeile der übergebenen Tabelle für die Kategorie 'relevant', ob die jeweils angegebenen Sätze aus Sicht der Vertragspartei: {relevant_company_name}, welche die Rolle {relevant_company_role} innerhalb von diesem einnimmt überhaupt relevant sind und ein Risiko für diese darstellen könnten \
+            Falls diese nur ein Risiko für die Gegenpartei {irrelevant_company_name}, welche die Rolle {irrelevant_company_role} innerhalb des Vertrages einnimmt, darstellt kannst du diese für die Kategorie 'relevant' gerne auf False setzen \
             Falls dies zutrifft bewerte die Kategorie 'relevant' mit True ansonsten mit False \
             Falls du 'relevant' auf True gesetzt hast bewerte die Zeile anschließend orientiert anhand von folgendem Prompt: \
             {relevant_scoring_prompt} \
@@ -346,7 +347,8 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company, risk_category, r
             Ein hoher TF-IDF-Wert pro Satz bedeutet für das zugehörige Wort nicht automatisch ein hohes Risiko kann über den kompletten Vertrag hinweg betrachtet allerdings sehr prägend sein. \
             Bewerte bitte primär den tatsächlichen Inhalt des Satzes \
             Erfinde keine Risiken und allgemein nichts hinzu \
-            Gib eine kurze Begründung deines zugeteilten Risikoscores mit maximal 1-3 Sätzen",
+            Gib eine kurze Begründung deines zugeteilten Risikoscores mit maximal 1-3 Sätzen indem du vor allem darauf eingehst warum dieser Satz ein Risiko für unsere ausgewählte relevante Vertragspartei {relevant_company_name} mit Rolle {relevant_company_role} darstellen könnte. \
+            Sollte dies wie oben angemerkt, nicht fall sein, indem es diese nicht betrifft oder kein Risiko für diese darstellt, stelle den Marker 'relevant' entsprechend bitte auf False",
             input=f"Analysiere folgende Tabelle, welche zu einem Vertrag erstellt wurde: {html_category_df}",
             reasoning={
                 "effort": "medium"
@@ -434,10 +436,10 @@ def can_distinct_individual(company1: dict, company2: dict, stated_individual: s
     match_2 = stated_individual in company2_name
 
     if match_1 and not match_2:
-        return True, company1
+        return True, company1, company2
 
     if match_2 and not match_1:
-        return True, company2
+        return True, company2, company1
 
     return False, None
 
