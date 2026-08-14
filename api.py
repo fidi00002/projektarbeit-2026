@@ -343,6 +343,11 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
             Falls dies zutrifft bewerte die Kategorie 'relevant' mit True ansonsten mit False \
             Falls du 'relevant' auf True gesetzt hast bewerte die Zeile anschließend orientiert anhand von folgendem Prompt: \
             {relevant_scoring_prompt} \
+            Regeln zur Risikoskalierung: \
+            Bewerte das Risiko auf einer Skala von 0.0 bis 10.0 \
+            Nutze zur genaueren Unterscheidung ausdrücklich Zwischenwerte in 0.1 - Schritten, beispielsweise 5.1, 8.9 oder auch 7.5 \
+            Verwende ganzzahlige Werte wie 1.0, 4.0 oder auch 9.0 wirklich nur dann, wenn dieser Wert das Risiko, welches von dem zu bearbeitenden Term in dem Moment, tatsächlich am genauesten wiedergibt\
+            Vergleiche am besten die einzelnen Sätze innerhalb derselben Risikokategorie miteinander, um unterschiedlich schweren Risiken möglichst auch unterschiedlich Bewertung zu zuteilen, wenn nötig \
             Zusätzliche Anmerkungen: \
             Ein hoher TF-IDF-Wert pro Satz bedeutet für das zugehörige Wort nicht automatisch ein hohes Risiko kann über den kompletten Vertrag hinweg betrachtet allerdings sehr prägend sein. \
             Bewerte bitte primär den tatsächlichen Inhalt des Satzes \
@@ -376,7 +381,11 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
                                             "type": "number",
                                             "minimum": 0,
                                             "maximum": 10,
-                                            "multipleOf": 0.1 #erlaubt KI eine Nachkommastelle zu benutzen
+                                            "multipleOf": 0.1, #erlaubt KI eine Nachkommastelle zu benutzen
+                                            "description": (
+                                                "Risk score from 0.0 to 10.0"
+                                                "Use 0.1 increments to distinguish risks"
+                                            )
                                         },
                                         "reasoning": {
                                             "type": "string"
