@@ -5,6 +5,7 @@ from pandas_save import dataframe_construction_td_idf
 import pandas as pd
 from pandas_save import grouping_by_max_tf_idf
 from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates
+from risk_scaling import calculation_of_risk_score
 
 #dateiauswahl fenster
 
@@ -64,17 +65,28 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
         print(ultimate_info_df_with_groupings)
 
     ultimate_info_df_with_groupings["relevant"] = False
-    ultimate_info_df_with_groupings["risk_value"] = -1.0
+    ultimate_info_df_with_groupings["risk_value"] = -1
+    ultimate_info_df_with_groupings["severity"] = -1
+    ultimate_info_df_with_groupings["scope_of_impact"] = -1
+    ultimate_info_df_with_groupings["reversibility"] = -1
+    ultimate_info_df_with_groupings["safety_guard"] = -1
+    ultimate_info_df_with_groupings["controllability"] = -1
     ultimate_info_df_with_groupings["reasoning"] = ""
 
     legal_prompt = "Berücksichtige insbesondere Haftung, Schadensersatz, (vorzeitige) Kündigungsrechte, Gewährleistungsrechte-/ und pflichten, unklar formulierte rechtliche Regelungen, beschränkungen ausschlüsse bestehender Rechte und unklar oder unsauber formulierte rechtliche Regelungen"
+    financial_prompt = "Berücksichtige insbesondere (mögliche) Zahlungsverpflichtungen, Vertragsstrafen, welche bspw. bei nichterfüllung von bedingungen eintreten können, zusätzliche oder schwer kalkulierbare Kosten, Umsatz- oder Ertragsverlust, Schadensersatz und Haftungskosten sowie sonstige finanzielle Belastungen"
+    operative_prompt = "Berücksichtige insbesondere (mögliche) Einschränkungen des Betriebs, Liefer- und Leistungspflichten, Exklusivitätsbindungen, Qualitäts- und Gewährleistungsforderungen, Abhängikeiten von der anderen Vertragspartei sowie Risken, welche durch Verzögerungen oder Leistungsausfälle entstehen können"
 
     relevant_company, irrelevant_company = evaluate_primary_subjects()
 
-    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "legal", legal_prompt)
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "legal", legal_prompt) #eventuell noch runterbrechen auf nur dictionary übergeben
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "financial", financial_prompt) #und dieses nochmal selbst in aufrufender funktion
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "operative", operative_prompt) #auslesen
 
     with pd.option_context("display.max_rows", None):
-        print(ultimate_df_with_scoring)
+        print(ultimate_df_with_scoring[["severity", "scope_of_impact", "reversibility", "safety_guard", "controllability", "risk_value"]])
+
+    calculation_of_risk_score(ultimate_df_with_scoring, True, 1.2, 1.2, 1.2)
 
     return ultimate_df_with_scoring
         
@@ -92,4 +104,4 @@ def extract_potential_image(): #should check for an image in the document and ex
 
 #first_page.text
 
-extract_text()
+#extract_text()

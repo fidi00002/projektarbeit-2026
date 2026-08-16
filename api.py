@@ -150,10 +150,10 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
     distinct, relevant_company, irrelevant_company = can_distinct_individual(Company_1, Company_2, stated_name)
 
     if distinct:
-        print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{Company_1['name']} mit der Rolle {Company_1['role']}, welche bedeutet {Company_1['role_description']} \n{Company_2['name']} mit der Rolle {Company_2['role']}, welche bedeutet {Company_1['role_description']}")
+        print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{relevant_company['name']} mit der Rolle {relevant_company['role']}, welche bedeutet {relevant_company['role_description']} \n{irrelevant_company['name']} mit der Rolle {irrelevant_company['role']}, welche bedeutet {irrelevant_company['role_description']}")
         print(f"{relevant_company['name']} hat folgende Verpflichtungen: \nHauptleistungspflichten: ")
-        for i in range(len(Company_1['main_obligations'])):
-            print(f"{i}. {Company_1['main_obligations'][i]}")
+        for i in range(len(relevant_company['main_obligations'])):
+            print(f"{i}. {relevant_company['main_obligations'][i]}")
         print(f"{relevant_company}")
 
         return relevant_company, irrelevant_company
@@ -338,15 +338,40 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
         response = client.responses.create(
             model="gpt-5.6-luna",
             instructions=f"Du bist ein Contract Analysis Tool \
-            Entscheide zunächst einmal für jede einzelne Zeile der übergebenen Tabelle für die Kategorie 'relevant', ob die jeweils angegebenen Sätze aus Sicht der Vertragspartei: {relevant_company_name}, welche die Rolle {relevant_company_role} innerhalb von diesem einnimmt überhaupt relevant sind und ein Risiko für diese darstellen könnten \
+            Entscheide zunächst einmal für jede einzelne Zeile der übergebenen Tabelle für die Kategorie 'relevant', ob die jeweils angegebenen Sätze aus Sicht der Vertragspartei: {relevant_company_name}, welche die Rolle {relevant_company_role} innerhalb von diesem einnimmt und überhaupt relevant sind d.h. überhaupt ein Risiko für diese darstellen könnten \
             Falls diese nur ein Risiko für die Gegenpartei {irrelevant_company_name}, welche die Rolle {irrelevant_company_role} innerhalb des Vertrages einnimmt, darstellt kannst du diese für die Kategorie 'relevant' gerne auf False setzen \
             Falls dies zutrifft bewerte die Kategorie 'relevant' mit True ansonsten mit False \
             Falls du 'relevant' auf True gesetzt hast bewerte die Zeile anschließend orientiert anhand von folgendem Prompt: \
             {relevant_scoring_prompt} \
             Regeln zur Risikoskalierung: \
-            Bewerte das Risiko auf einer Skala von 0.0 bis 10.0 \
-            Nutze zur genaueren Unterscheidung ausdrücklich Zwischenwerte in 0.1 - Schritten, beispielsweise 5.1, 8.9 oder auch 7.5 \
-            Verwende ganzzahlige Werte wie 1.0, 4.0 oder auch 9.0 wirklich nur dann, wenn dieser Wert das Risiko, welches von dem zu bearbeitenden Term in dem Moment, tatsächlich am genauesten wiedergibt\
+            Bewerte das Risiko anhand von folgenden fünf Komponenten, wobei jede Komponente ausschließlich einen ganzzahligen Wert zwischen 0 und 2 enthalten darf \
+            \
+            Severity: \
+            0 = hat keine oder nur sehr geringe mögliche negative Auswirkungen\
+            1 = mittelmäßig Auswirkungen, mit möglicher merklicher Auswirkung\
+            2 = schwerwiegende bis absolut katastrophale Auswirkungen\
+            \
+            Scope_of_Impact: \
+            0 = betrifft keine oder max. eine Leistung/Pflichten/Rechte innerhalb des Vertrages, ist also eng begrenzt\
+            1 = betrifft mehrere Bereiche/Leistungen/Rechte oder Pflichten\
+            2 = hat vertragsweite Auswirkungen besonders mit Folgen für die Kernleistung des Vertrages\
+            \
+            Reversibility: \
+            0 = keine - oder kurzfristige Folgen, welche leicht korrigierbar sind und vollständig rückgängig gemacht werden können\
+            1 = mittelfristige Folgen, welche nur teilweise - und mit größerem Aufwand reversibel sind\
+            2 = langfristig Folgen, welche nur sehr schwer oder gar nicht rückgängig machbar sind\
+            \
+            Safety_Guard: \
+            0 = viele ausreichende Schutzmechanismen, welche potentielle Gefahr gut eingrenzen\
+            1 = nur teilweise vorhandene Schutzmechanismen, welche die potentielle Gefahr einigermaßen eingrenzen\
+            2 = nur sehr wenige bis gar keine Schutzmechanismen, welche die potentielle Gefahr eingrenzen könnten\
+            \
+            Controllability: \
+            0 = Risikokontrolle hängt allein von der ausgewählten, relevanten Vertragspartei ab und ist einfach zu kontrollieren\
+            1 = Risikokontrolle liegt nicht allein in der Hand von der ausgewählten, relevanten Vertragspartei, ist nur eingeschränkt kontrollierbar und die Risikokontrolle ist damit nur teilweise vorhanden\
+            2 = Risikokontrolle ist nur schwer oder gar nicht durch die ausgewählte, relevante Vertragspartei kontrollierbar\
+            \
+            Bewerte die einzelnen Komponenten völlig unabhängig voneinander, wenn möglich \
             Vergleiche am besten die einzelnen Sätze innerhalb derselben Risikokategorie miteinander, um unterschiedlich schweren Risiken möglichst auch unterschiedlich Bewertung zu zuteilen, wenn nötig \
             Zusätzliche Anmerkungen: \
             Ein hoher TF-IDF-Wert pro Satz bedeutet für das zugehörige Wort nicht automatisch ein hohes Risiko kann über den kompletten Vertrag hinweg betrachtet allerdings sehr prägend sein. \
@@ -356,7 +381,7 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
             Sollte dies wie oben angemerkt, nicht fall sein, indem es diese nicht betrifft oder kein Risiko für diese darstellt, stelle den Marker 'relevant' entsprechend bitte auf False",
             input=f"Analysiere folgende Tabelle, welche zu einem Vertrag erstellt wurde: {html_category_df}",
             reasoning={
-                "effort": "medium"
+                "effort": "xhigh" #none, low, medium, high, xhigh, max
             },
             text={
                 "format": {
@@ -369,7 +394,7 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
                             "results": { #angegebene Vertragspartner des Dokumentes
                                 "type": "array",
                                 "items": {
-                                    "type": "object", 
+                                    "type": "object",
                                     "properties": {
                                         "id": {
                                             "type": "string"
@@ -377,14 +402,46 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
                                         "relevant": {
                                             "type": "boolean"
                                         },
-                                        "risk_value": {
-                                            "type": "number",
-                                            "minimum": 0,
-                                            "maximum": 10,
-                                            "multipleOf": 0.1, #erlaubt KI eine Nachkommastelle zu benutzen
+                                        "components": {
+                                            "type": "object",
+                                            "properties": {
+                                                "Severity": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 2
+                                                },
+                                                "Scope_of_Impact": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 2
+                                                },
+                                                "Reversibility": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 2
+                                                },
+                                                "Safety_Guard": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 2
+                                                },
+                                                "Controllability": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 2
+                                                }
+                                            },
+                                            "required": [
+                                                "Severity",
+                                                "Scope_of_Impact",
+                                                "Reversibility",
+                                                "Safety_Guard",
+                                                "Controllability"
+                                            ],
+                                            "additionalProperties": False,
                                             "description": (
-                                                "Risk score from 0.0 to 10.0"
-                                                "Use 0.1 increments to distinguish risks"
+                                                "Build the scores of these categories ranking from 0 to 2"
+                                                "So for each you got to decide if it's rather low, moderate or of high value"
                                             )
                                         },
                                         "reasoning": {
@@ -394,8 +451,8 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
                                     "required": [ #bestimmt dass diese Items gegeben sein müssen
                                         "id",
                                         "relevant",
-                                        "risk_value",
-                                        "reasoning"
+                                        "reasoning",
+                                        "components"
                                     ],   
                                     "additionalProperties": False #die KI darf keine zusätzlichen Properties neben denen die definiert sind erzeugen                                                           
                                 }
@@ -409,7 +466,7 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
                 },
                 "verbosity": "low" #gibt wieder wie lang bzw. ausführlich die Antwort sein soll
             },
-            max_output_tokens=5000,
+            max_output_tokens=200000,
             store=False 
         )
 
@@ -430,9 +487,17 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
     results = results_dict["results"]
 
     for result in results:
-        df.loc[(df["id"] == result["id"]) & (df["risk_category"] == risk_category), "relevant"] = result["relevant"]
-        df.loc[(df["id"] == result["id"]) & (df["risk_category"] == risk_category), "risk_value"] = result["risk_value"]
-        df.loc[(df["id"] == result["id"]) & (df["risk_category"] == risk_category), "reasoning"] = result["reasoning"]
+        components = result["components"]
+        condition_df = ((df["id"] == result["id"]) & (df["risk_category"] == risk_category))
+        df.loc[condition_df, "relevant"] = result["relevant"]
+        df.loc[condition_df, "severity"] = components["Severity"]
+        df.loc[condition_df, "scope_of_impact"] = components["Scope_of_Impact"]
+        df.loc[condition_df, "reversibility"] = components["Reversibility"]
+        df.loc[condition_df, "safety_guard"] = components["Safety_Guard"]
+        df.loc[condition_df, "controllability"] = components["Controllability"]
+        df.loc[condition_df, "reasoning"] = result["reasoning"]
+
+    df["risk_value"] = df[["severity", "scope_of_impact", "reversibility", "safety_guard", "controllability"]].sum(axis=1)
 
     return df 
 
@@ -450,7 +515,7 @@ def can_distinct_individual(company1: dict, company2: dict, stated_individual: s
     if match_2 and not match_1:
         return True, company2, company1
 
-    return False, None
+    return False, None, None
 
 def remove_unnecessary(string: str):
     string = string.strip()
