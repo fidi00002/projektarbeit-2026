@@ -1,11 +1,18 @@
 from parse_pdf import extract_text
-from api import evaluate_contract
+#from api import evaluate_contract
 from docx import Document
 import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
+import pandas as pd
+from parse_pdf import extract_text
+from process_data import creation_of_dictionary
+from pandas_save import dataframe_construction_td_idf
+from pandas_save import dataframe_construction_td_idf, calculate_tfidf_analysis, attach_tfidf_to_risks #grouping_by_max_tf_idf, 
+from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates
+from risk_scaling import calculation_of_risk_score
 
 # pfad = C:\Users\finnd\Documents\Informatik\Projektarbeit\Test_Contract\Vertrag1.pdf
 
@@ -33,16 +40,30 @@ def analyse_contract():
     legal_current =  tk.IntVar()
     operative_current = tk.IntVar()
 
-    financial_scale = Scale(root, from_=0, to=10, bd=5, tickinterval=5, orient=HORIZONTAL, variable = finance_current)
-    legal_scale = Scale(root, from_=0, to=10, bd=5, tickinterval=5, orient=HORIZONTAL, variable= legal_current)
-    operative_scale = Scale(root, from_=0, to=10, bd=5, tickinterval=5, orient=HORIZONTAL, variable= operative_current)
+    company_name = tk.StringVar() #NEU
+
+    score_mapping ={
+        1: 0.8,
+        2: 0.9,
+        3: 1.0,
+        4: 1.1,
+        5: 1.2
+    }
+
+    #add heading with meaning for numbers above
+
+    financial_scale = Scale(root, from_=1, to=5, bd=5, tickinterval=2, orient=HORIZONTAL, variable = finance_current)
+    legal_scale = Scale(root, from_=1, to=5, bd=5, tickinterval=2, orient=HORIZONTAL, variable= legal_current)
+    operative_scale = Scale(root, from_=1, to=5, bd=5, tickinterval=2, orient=HORIZONTAL, variable= operative_current)
+    company_entry = tk.Entry(root, textvariable=company_name, width=40)
 
     financial_scale.grid(row=2, column=1)
     legal_scale.grid(row=4, column=1)
     operative_scale.grid(row=6, column=1)
+    company_entry.grid(row=1, column=1) #NEU
 
-    financial_scale.set(5)
-    legal_scale.set(5)
+    financial_scale.set(3)
+    legal_scale.set(3)
     operative_scale.set(3)
 
     root.title("Vertragsanalyse - Vorabstimmung")
@@ -52,7 +73,10 @@ def analyse_contract():
     legal_label = tk.Label(root, text="Legal")
     operative_label = tk.Label(root, text="Operative")
 
+    com_label = tk.Label(root, text="Name of your Company (please exactly as written in the contract)") #NEU
+
     all_label.grid(row=0)
+    com_label.grid(row=1, column=0)
     fin_label.grid(row=2, column=0)
     legal_label.grid(row=4, column=0)
     operative_label.grid(row=6, column=0)
@@ -73,15 +97,16 @@ def analyse_contract():
 
     root.mainloop()
 
-    finance: int = finance_current.get()
-    legal: int = legal_current.get()
-    operative: int = operative_current.get()
+    finance: float = score_mapping[finance_current.get()]
+    legal: float = score_mapping[legal_current.get()]
+    operative: float = score_mapping[operative_current.get()]
+    company_name: str = company_name.get()
 
-    save_dataset_risk(finance, legal, operative)
+    #save_dataset_risk(finance, legal, operative)
 
     #test ob variablen funktionieren
-    print(fr"{str(finance)}", "\n", fr"{str(legal)}", "\n", fr"{str(operative)}")
-    print(type(finance), type(legal), type(operative)) 
+    # print(fr"{str(finance)}", "\n", fr"{str(legal)}", "\n", fr"{str(operative)}")
+    # print(type(finance), type(legal), type(operative)) 
 
     root3 = tk.Tk()
 
@@ -137,15 +162,74 @@ def analyse_contract():
     #textfeld zur ausgabe von analyse
     # maybe .message function for formatted output
     # .progressbar for better visualisation of risk scaling? (optional, if enough time left)
+
+    #HIER ENDET DIE ABFRAGE NACH DEM DATEIEN PFAD
+
+    #HIER BEGINNT DER AUFRUF DER BEARBEITENDEN FUNKTIONEN
+
+    metadata_contract: pd.DataFrame = extract_text(pdf_path)
+
+    risk_df = creation_of_dictionary(metadata_contract)
+    tfidf_df = dataframe_construction_td_idf(metadata_contract)
+
+    tfidf_sentence_df, top5_tdidf_df = calculate_tfidf_analysis(tfidf_df, top_amount=5)
+    ultimate_info_df_with_groupings = attach_tfidf_to_risks(risk_df, tfidf_sentence_df)
+
+    #ultimate_info_df = pd.merge(risk_df, tfidf_df[["id", "word", "TF-IDF"]], on=["id", "word"], how="inner")
+    #ultimate_info_df = ultimate_info_df.sort_values(by="TF-IDF", ascending=False)
+
+    #ultimate_info_df_with_groupings = grouping_by_max_tf_idf(ultimate_info_df)
+
+    with pd.option_context("display.max_rows", None):
+        print(top5_tdidf_df)
+
+    with pd.option_context("display.max_rows", None):
+        print(ultimate_info_df_with_groupings)
+
+    ultimate_info_df_with_groupings["relevant"] = False
+    ultimate_info_df_with_groupings["risk_value"] = -1
+    ultimate_info_df_with_groupings["severity"] = -1
+    ultimate_info_df_with_groupings["scope_of_impact"] = -1
+    ultimate_info_df_with_groupings["reversibility"] = -1
+    ultimate_info_df_with_groupings["safety_guard"] = -1
+    ultimate_info_df_with_groupings["controllability"] = -1
+    ultimate_info_df_with_groupings["reasoning"] = ""
+
+    legal_prompt = "Berücksichtige insbesondere Haftung, Schadensersatz, (vorzeitige) Kündigungsrechte, Gewährleistungsrechte-/ und pflichten, unklar formulierte rechtliche Regelungen, beschränkungen ausschlüsse bestehender Rechte und unklar oder unsauber formulierte rechtliche Regelungen"
+    financial_prompt = "Berücksichtige insbesondere (mögliche) Zahlungsverpflichtungen, Vertragsstrafen, welche bspw. bei nichterfüllung von bedingungen eintreten können, zusätzliche oder schwer kalkulierbare Kosten, Umsatz- oder Ertragsverlust, Schadensersatz und Haftungskosten sowie sonstige finanzielle Belastungen"
+    operative_prompt = "Berücksichtige insbesondere (mögliche) Einschränkungen des Betriebs, Liefer- und Leistungspflichten, Exklusivitätsbindungen, Qualitäts- und Gewährleistungsforderungen, Abhängikeiten von der anderen Vertragspartei sowie Risken, welche durch Verzögerungen oder Leistungsausfälle entstehen können"
+
+    relevant_company, irrelevant_company = evaluate_primary_subjects(contract=metadata_contract["whole_text"], name=company_name)
+
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "legal", legal_prompt) #eventuell noch runterbrechen auf nur dictionary übergeben
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "financial", financial_prompt) #und dieses nochmal selbst in aufrufender funktion
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "operative", operative_prompt) #auslesen
+
+    with pd.option_context("display.max_rows", None):
+        print(ultimate_df_with_scoring[["severity", "scope_of_impact", "reversibility", "safety_guard", "controllability", "risk_value"]])
+
+    calculation_of_risk_score(ultimate_df_with_scoring, True, legal, finance, operative)
+
+    print(legal, finance, operative)
+
+    return ultimate_df_with_scoring
+
+    print(df)
+
+    return df
+
+    #HIER BEGINNT DIE AUSGABE DES OUTPUT FENSTERS
+
     root2 = tk.Tk()
     root2.title("Vetragsanalyse")
-    root2.geometry("1024x768")
 
-    text = ScrolledText(root2)
+    text = ScrolledText(root2, wrap=tk.WORD)
 
-    text.pack()
+    text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
-    text.insert("end", """Gerne, hier ist die Analyse des von Ihnen bereitgestellten "DISTRIBUTOR AGREEMENT" von LIMEENERGYCO.
+    #später hier genauen text aus allen funktionen zusammenstellen
+
+    final_analysis_as_text = """Gerne, hier ist die Analyse des von Ihnen bereitgestellten "DISTRIBUTOR AGREEMENT" von LIMEENERGYCO.
 
 **Gesamtbewertung des Risikos:** 6/10
 
@@ -177,8 +261,14 @@ Dieser "DISTRIBUTOR AGREEMENT" regelt die Beziehung zwischen Electric City Corp.
 *   **Rückkauf:** Nach Vertragsende hat das Unternehmen die Option, unverkaufte Produkte vom Distributor zurückzukaufen.
 *   **Haftung und Freistellung:** Beide Parteien verpflichten sich zur gegenseitigen Freistellung bei Verstößen gegen den Vertrag, Fahrlässigkeit oder Verletzung von Schutzrechten Dritter. Das Unternehmen sichert zu, eine Produkthaftpflichtversicherung abzuschließen und den Distributor als zusätzlichen Versicherungsnehmer einzutragen.
 *   **Vertraulichkeit und Wettbewerbsbeschränkungen:** Beide Parteien müssen vertrauliche Informationen schützen. Der Distributor unterliegt nach Vertragsende Beschränkungen bezüglich der Anwerbung von Mitarbeitern und Kunden des Unternehmens sowie dem Verkauf von Konkurrenzprodukten.
-*   **Anwendbares Recht:** Das Recht des Staates Illinois gilt für diesen Vertrag.""") #benutzen von label damit user nicht ausversehen in die anzeige schreiben kann & font=()
+*   **Anwendbares Recht:** Das Recht des Staates Illinois gilt für diesen Vertrag."""
+
+    text.insert("end", final_analysis_as_text) #benutzen von label damit user nicht ausversehen in die anzeige schreiben kann & font=()
     # label.config(anchor="center", font=("Times New Roman", 20, "bold"), relief="solid")
+    lines = final_analysis_as_text.splitlines()
+
+    text.config(height=min(max(len(lines), 10), 40), width=100, state="disabled")
+    
     root2.mainloop()
         # doc = Document()
 

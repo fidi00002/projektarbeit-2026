@@ -180,7 +180,7 @@ def filter(text: str = "", sentence_id: str = ""): # filters the contract accord
     financial_list: list = re.findall(r"\bpay(?:able|s|d|ment(?:s)?)?|(?:un[ -]|pre[- ]+)?paid|LC(?:s)?|" 
         r"letter(?:s)?\s+of\s+credit|insur(?:ance(?:s)|e(?:s|d)?|ing|able|ured)|cover(?:age(?:s)?|ed|ing)|indemni(?:fy(?:ing)?|fie(?:s|d)|fication|ty|ties)|"
         r"damag(?:e(?:s|d)?|ing)|repurchas(?:ing|e(?:s|d)?)|CPI(?:s)?|ConsumerPriceInd(?:ex|ices)|"
-        r"terminat(?:ion(?:s)?|e(?:s|d)?|ing)|default(?:s|ed|ing)?|(infringe(?:ment(?:s)?|(?:s|d)?)?|infringing)|fee(?:s)?|charg(?:e(?:s|d)?|ing)|cover(?:age|ing(?:s)?|ed|s)|"
+        r"terminat(?:ion(?:s)?|e(?:s|d)?|ing)|default(?:s|ed|ing)?|(?:infringe(?:ment(?:s)?|(?:s|d)?)?|infringing)|fee(?:s)?|charg(?:e(?:s|d)?|ing)|cover(?:age|ing(?:s)?|ed|s)|"
         r"los(?:s(?:es)?|e|es|t|ing)|expense(?:s|d)?\b", text, re.I)             
 
     #operative terms search

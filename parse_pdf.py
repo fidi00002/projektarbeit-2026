@@ -3,7 +3,6 @@ import re
 from process_data import creation_of_dictionary
 from pandas_save import dataframe_construction_td_idf
 import pandas as pd
-from pandas_save import grouping_by_max_tf_idf
 from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates
 from risk_scaling import calculation_of_risk_score
 
@@ -29,19 +28,23 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
     pdf_path_copy: list = pdf_path.rsplit("\\")
     file_name = pdf_path_copy[len(pdf_path_copy)-1] #später direkt in main auslesen lassen und als input variable mitgeben sobald pipeline steht
     contract_sites: list = []
+    full_text = []
     possible_contract_classification: str = ""
     with pdfplumber.open(pdf_path) as pdf:
     #    text: str = pdf.pages[0].extract_text()
         possible_contract_classification = pdf.pages[0].search(r"Distributor|Service|Outsourcing|License|Supply", case= False)
         for i in range(0, len(pdf.pages)):
             contract_sites.append([pdf.pages[i].extract_text(), pdf.pages[i].page_number])
+            full_text.append(f"----------------Page{pdf.pages[i].page_number}----------------\n{pdf.pages[i].extract_text()}")
             pdf.pages[i].close()
 
     test_variable1 = "ABcdeF"
     test_variable2 = "abCDeFxyz"
 
+    full_text = "\n\n".join(full_text)
+
     metadata_contract : dict = dict(filename = file_name, contract_type = possible_contract_classification[0]["text"],
-                                    correctness_probability = 0, listlist_of_pages = contract_sites)
+                                    correctness_probability = 0, listlist_of_pages = contract_sites, whole_text = full_text)
     if possible_contract_classification:
         probability_of_correctness += 0.25
     if re.search(r"Distributor|Service|Outsourcing|License|Supply", file_name):
@@ -50,53 +53,7 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
         probability_of_correctness += 0.25
     metadata_contract["correctness_probability"] = probability_of_correctness
 
-    risk_df = creation_of_dictionary(metadata_contract)
-    tfidf_df = dataframe_construction_td_idf(metadata_contract)
-
-    ultimate_info_df = pd.merge(risk_df, tfidf_df[["id", "word", "TF-IDF"]], on=["id", "word"], how="inner")
-    ultimate_info_df = ultimate_info_df.sort_values(by="TF-IDF", ascending=False)
-
-    ultimate_info_df_with_groupings = grouping_by_max_tf_idf(ultimate_info_df)
-
-    with pd.option_context("display.max_rows", None):
-        print(ultimate_info_df)
-
-    with pd.option_context("display.max_rows", None):
-        print(ultimate_info_df_with_groupings)
-
-    ultimate_info_df_with_groupings["relevant"] = False
-    ultimate_info_df_with_groupings["risk_value"] = -1
-    ultimate_info_df_with_groupings["severity"] = -1
-    ultimate_info_df_with_groupings["scope_of_impact"] = -1
-    ultimate_info_df_with_groupings["reversibility"] = -1
-    ultimate_info_df_with_groupings["safety_guard"] = -1
-    ultimate_info_df_with_groupings["controllability"] = -1
-    ultimate_info_df_with_groupings["reasoning"] = ""
-
-    legal_prompt = "Berücksichtige insbesondere Haftung, Schadensersatz, (vorzeitige) Kündigungsrechte, Gewährleistungsrechte-/ und pflichten, unklar formulierte rechtliche Regelungen, beschränkungen ausschlüsse bestehender Rechte und unklar oder unsauber formulierte rechtliche Regelungen"
-    financial_prompt = "Berücksichtige insbesondere (mögliche) Zahlungsverpflichtungen, Vertragsstrafen, welche bspw. bei nichterfüllung von bedingungen eintreten können, zusätzliche oder schwer kalkulierbare Kosten, Umsatz- oder Ertragsverlust, Schadensersatz und Haftungskosten sowie sonstige finanzielle Belastungen"
-    operative_prompt = "Berücksichtige insbesondere (mögliche) Einschränkungen des Betriebs, Liefer- und Leistungspflichten, Exklusivitätsbindungen, Qualitäts- und Gewährleistungsforderungen, Abhängikeiten von der anderen Vertragspartei sowie Risken, welche durch Verzögerungen oder Leistungsausfälle entstehen können"
-
-    relevant_company, irrelevant_company = evaluate_primary_subjects()
-
-    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "legal", legal_prompt) #eventuell noch runterbrechen auf nur dictionary übergeben
-    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "financial", financial_prompt) #und dieses nochmal selbst in aufrufender funktion
-    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "operative", operative_prompt) #auslesen
-
-    with pd.option_context("display.max_rows", None):
-        print(ultimate_df_with_scoring[["severity", "scope_of_impact", "reversibility", "safety_guard", "controllability", "risk_value"]])
-
-    calculation_of_risk_score(ultimate_df_with_scoring, True, 1.2, 1.2, 1.2)
-
-    return ultimate_df_with_scoring
-        
-def extract_potential_table(): #should check for table in the document and extract it if existing
-       # table: Table = pdf.pages[0].extract_table()
-    raise NotImplementedError("function isn't declared yet")
-
-def extract_potential_image(): #should check for an image in the document and extract if exsiting
-    raise NotImplementedError("function isn't declared yet")
-
+    return metadata_contract
 
 #Test zum Überprüfen ob richtige Seitenzahl erkannt 
 
@@ -104,4 +61,4 @@ def extract_potential_image(): #should check for an image in the document and ex
 
 #first_page.text
 
-#extract_text()
+extract_text()
