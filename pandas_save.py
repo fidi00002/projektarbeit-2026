@@ -105,20 +105,37 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         test_supply = [378, 169, 16]
 
         #setup of basic foundation
+
+        contract_indices = {
+            "service agreement": service_indices,
+            "distributor agreement": distributor_indices,
+            "supply agreement": supply_indices,
+            "outsourcing agreement": outsourcing_indices,
+            "license agreement": license_indices
+        }
+
+        selected_indices = contract_indices.get(metadata_contract["contract_type"].lower())
+
+        if selected_indices is None:
+            raise ValueError("Fehler bei Vertragserkennung")
         
         dataframe_foundation = []
 
-        for i in range(len(service_indices)):
-            output: dict = summary['data'][service_indices[i]] #erstellen von dictionary, dass Grundlage für DF bildet
+        for i in range(len(selected_indices)):
+            output: dict = summary['data'][selected_indices[i]] #erstellen von dictionary, dass Grundlage für DF bildet
             str; contract_title = output.get('title')
             paragraphs: list = (output.get('paragraphs'))
             for item in paragraphs:
                 content: str = item['context']
             dataframe_foundation.append({
-                "contract": f"C{service_indices[i]+1}", 
+                "contract": f"C{selected_indices[i]+1}", 
                 "title": contract_title, #title Zeile
                 "text": content #text Zeile
             })
+
+        print(f"\n\n{metadata_contract['contract_type']}\n\n")
+
+
         df = pd.DataFrame(dataframe_foundation)
 
         sentence_dataset = {}
@@ -146,6 +163,8 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         tf_df.columns = ["word", "amount_of_word"]
         tf_df["word_amount_overall"] = general_amount_of_words
         tf_df["tf"] = tf_df["amount_of_word"]/tf_df["word_amount_overall"] #calculation of tf
+
+
 
 
 
@@ -197,21 +216,12 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
         return tf_idf_relevant
 
-    # def grouping_by_max_tf_idf(ultimate_info_df: pd.DataFrame):
-    #     indice_of_highest_tf_idf_word = (ultimate_info_df.groupby(["id", "risk_category"])["TF-IDF"].idxmax()) #gruppe für satz pro category und sentence id für index mit höchstem wert index =! id
-    #     highest_word_df = ultimate_info_df.loc[indice_of_highest_tf_idf_word,["id", "risk_category", "word"]] #df mit wörtern von höchstem indice
-    #     highest_word_df = highest_word_df.rename(columns={"word": "word_for_max_tf_idf"}) #word spalten umbenannt
-    #     ultimate_info_df = (ultimate_info_df.groupby(["id", "page", "text", "risk_category"], as_index=False).agg(risk_words=("word", list), max_TF_IDF=("TF-IDF", "max"))) #risk wörter eines gleichen satzes zusammenfassen + nur höchster wert aus TF-IDF Spalte 
-    #     ultimate_info_df = pd.merge(ultimate_info_df, highest_word_df, on=["id", "risk_category"], how="left") #jetzt wort für highest tf-idf bestimmten und hinzufügen
-    #     ultimate_info_df = (ultimate_info_df.sort_values(by="max_TF_IDF", ascending=False).reset_index(drop=True)) #sortieren anhand von neuem tf-idf wert
-    #     return ultimate_info_df
-
     def assign_tf_idf_percentile_scaling(percentile: float): #matching according levels to tf-idf scoring
         if pd.isna(percentile):
             return "value not available"
-        if percentile >= 0.95:
+        if percentile >= 0.90:
             return "very high"
-        if percentile >= 0.80:
+        if percentile >= 0.75:
             return "high"
         if percentile >= 0.50:
             return "moderate"
@@ -227,40 +237,14 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
         #genauere berechnung perzentile 
 
-        sentence_df["tfidf_percentile"] = float("nan")
-        positive_scores = sentence_df["tfidf_sentence_score"] > 0
-        sentence_df.loc[positive_scores, "tfidf_percentile"] = (sentence_df.loc[positive_scores, "tfidf_sentence_score"].rank(pct=True))
+        sentence_df["tfidf_percentile"] = float("nan") #leere percentile spalte wird angelegt
+        positive_scores = sentence_df["tfidf_sentence_score"] > 0 #berechnet den rang nur für positive werte -> damit sätze die wert von 0 haben nicht ins gewicht fallen
+        sentence_df.loc[positive_scores, "tfidf_percentile"] = (sentence_df.loc[positive_scores, "tfidf_sentence_score"].rank(pct=True)) #berechnung des anteils (percentil)
         sentence_df["tfidf_level"] = (sentence_df["tfidf_percentile"].apply(assign_tf_idf_percentile_scaling)) #mapping of scaling to values
         return sentence_df
 
-    def calculate_tfidf_analysis(tfidf_word_df: pd.DataFrame, top_amount: int = 5): #berechnung der vorerst fünf höchsten tfidf sentence candidaten + allgemein für sätze 
-        sentence_df = calculate_whole_sentence_tfidf(tfidf_word_df)
-        top_tfidf_df = (sentence_df[sentence_df["tfidf_sentence_score"] > 0].nlargest(top_amount, "tfidf_sentence_score").copy().reset_index(drop=True))
-        top_tfidf_df.insert(0, "tfidf_rank", range(1, len(top_tfidf_df) + 1))
-
-        return sentence_df, top_tfidf_df
-
-    #beispiel ausgabe text
-
-    # def format_tf_idf_analysis(top_tfidf_df: pd.DataFrame):
-    #     lines = ["Lexically characteristic contract sentences", ""]
-
-    #     for _, row in top_tfidf_df.iterrows():
-    #         percentile = row["tfidf_percentile"] * 100
-
-    #         lines.append(f"{row["tfidf_"]}")
-
     def attach_tfidf_to_risks(risk_df: pd.DataFrame, sentence_tfidf_df: pd.DataFrame): #hinzufügen von berechneten td-idf werten an gefundenen risikowörtern
-        grouped_risk_df = (risk_df.groupby(["id", "page", "text", "risk_category"], as_index=False).agg(risk_words=("word", lambda words: list(dict.fromkeys(words)))))
+        grouped_risk_df = (risk_df.groupby(["id", "page", "text", "risk_category"], as_index=False).agg(risk_words=("word", lambda words: list(dict.fromkeys(words))))) #gruppen nach kategorien und lambda entfernt doppelte wörter
         sentence_information = sentence_tfidf_df[["id", "page", "tfidf_sentence_score", "tfidf_percentile", "tfidf_level"]]
         ultimate_risk_df = pd.merge(grouped_risk_df, sentence_information, on=["id", "page"], how="left")
         return ultimate_risk_df
-
-
-
-
-    
-
-        #merge of tf and idf
-
-#dataframe_construction_td_idf()

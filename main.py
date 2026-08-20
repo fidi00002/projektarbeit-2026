@@ -9,9 +9,8 @@ from tkinter.scrolledtext import ScrolledText
 import pandas as pd
 from parse_pdf import extract_text
 from process_data import creation_of_dictionary
-from pandas_save import dataframe_construction_td_idf
-from pandas_save import dataframe_construction_td_idf, calculate_tfidf_analysis, attach_tfidf_to_risks #grouping_by_max_tf_idf, 
-from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates
+from pandas_save import dataframe_construction_td_idf, attach_tfidf_to_risks, calculate_whole_sentence_tfidf 
+from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates, evaluation_of_tfidf_candidates
 from risk_scaling import calculation_of_risk_score
 
 # pfad = C:\Users\finnd\Documents\Informatik\Projektarbeit\Test_Contract\Vertrag1.pdf
@@ -172,16 +171,27 @@ def analyse_contract():
     risk_df = creation_of_dictionary(metadata_contract)
     tfidf_df = dataframe_construction_td_idf(metadata_contract)
 
-    tfidf_sentence_df, top5_tdidf_df = calculate_tfidf_analysis(tfidf_df, top_amount=5)
-    ultimate_info_df_with_groupings = attach_tfidf_to_risks(risk_df, tfidf_sentence_df)
+    tfidf_sentence_df= calculate_whole_sentence_tfidf(tfidf_df)
 
-    #ultimate_info_df = pd.merge(risk_df, tfidf_df[["id", "word", "TF-IDF"]], on=["id", "word"], how="inner")
-    #ultimate_info_df = ultimate_info_df.sort_values(by="TF-IDF", ascending=False)
+    #gruppierung nach top 20% kandidaten
 
-    #ultimate_info_df_with_groupings = grouping_by_max_tf_idf(ultimate_info_df)
-
+    all_tfidf_values_df = tfidf_sentence_df.copy()
+    tfidf_candidate_df = all_tfidf_values_df[all_tfidf_values_df["tfidf_percentile"] >= 0.75].copy()
+    tfidf_candidate_df = tfidf_candidate_df.sort_values("tfidf_sentence_score", ascending=False).reset_index(drop=True)
     with pd.option_context("display.max_rows", None):
-        print(top5_tdidf_df)
+        print(tfidf_candidate_df)
+
+    tfidf_candidate_df_evaluated = evaluation_of_tfidf_candidates(tfidf_candidate_df)
+    with pd.option_context("display.max_rows", None):
+        print(tfidf_candidate_df_evaluated)
+
+    tfidf_candidate_only_relevant = tfidf_candidate_df_evaluated[tfidf_candidate_df_evaluated["relevant"] == True].copy()
+
+    highest5_tfidf_values = (tfidf_candidate_only_relevant.nlargest(5, "tfidf_sentence_score").reset_index(drop=True))
+    with pd.option_context("display.max_rows", None):
+        print(highest5_tfidf_values)
+
+    ultimate_info_df_with_groupings = attach_tfidf_to_risks(risk_df, tfidf_sentence_df)
 
     with pd.option_context("display.max_rows", None):
         print(ultimate_info_df_with_groupings)
@@ -207,6 +217,8 @@ def analyse_contract():
 
     with pd.option_context("display.max_rows", None):
         print(ultimate_df_with_scoring[["severity", "scope_of_impact", "reversibility", "safety_guard", "controllability", "risk_value"]])
+
+    ultimate_df_with_scoring = ultimate_df_with_scoring[ultimate_df_with_scoring["relevant"] == True].copy() #rausläschen aller als 'False' eingestuften und damit nicht relevanten Risiken
 
     calculation_of_risk_score(ultimate_df_with_scoring, True, legal, finance, operative)
 

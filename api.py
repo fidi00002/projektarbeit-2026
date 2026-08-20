@@ -5,24 +5,18 @@ from read_dataset import gain_access
 import re
 
 #WICHTIG: VOR UPLOAD TO GITHUB IMMER RAUSLÖSCHEN
-Chat_GPT_Luna_Key: str = ""
+Chat_GPT_Luna_Key: str = "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"
 
 def evaluate_primary_subjects(contract: str = None, name: str = None):
     content: str
-    contract_type: str
-    i: int = 0
 
-    if contract is not None:
-        content = contract
-    else:
-        contract_type, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
+    content = contract
 
-    if name is not None:
-        stated_name = name
-    else:
-        stated_name = "Electric City Corp."
+    stated_name = name
 
-    client = OpenAI(api_key="")
+    print(name)
+
+    client = OpenAI(api_key="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")
 
     try:
         response = client.responses.create(
@@ -170,12 +164,9 @@ def determine_contract_type(contract: str = None):
     contract_type: str
     i: int = 0
 
-    if contract is not None:
-        content = contract
-    else:
-        contract_type, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
+    content = contract
 
-    client = OpenAI(api_key="")
+    client = OpenAI(api_key="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")
 
     try:
         response = client.responses.create(
@@ -202,11 +193,11 @@ def determine_contract_type(contract: str = None):
                             "contract_type": { #Contract_Type des Vertragsdokuments
                                 "type": "string",
                                 "enum": [
-                                    "Distributor Agreement",
-                                    "License Agreement",
-                                    "Supply Agreement",
-                                    "Service Agreement",
-                                    "Outsourcing Agreement"
+                                    "distributor agreement",
+                                    "license agreement",
+                                    "supply agreement",
+                                    "service agreement",
+                                    "outsourcing agreement"
                                 ]
                             },
                         },  
@@ -261,7 +252,7 @@ def contract_summary(contract: str = None):
     else:
         contract_type, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
 
-    client = OpenAI(api_key="")
+    client = OpenAI(api_key="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")
 
     try:
         response = client.responses.create(
@@ -328,10 +319,10 @@ def contract_summary(contract: str = None):
     return contract_summary
 
 def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_company_role, irrelevant_company_name, irrelevant_company_role, risk_category, relevant_scoring_prompt):
-    category_df = df[df["risk_category"] == risk_category].copy()
+    category_df = df.loc[df["risk_category"] == risk_category, ["id", "page", "text", "risk_category", "risk_words"]].copy()
     html_category_df = category_df.to_html(index=False) 
 
-    client = OpenAI(api_key="")
+    client = OpenAI(api_key="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")
 
     try:
 
@@ -374,14 +365,13 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
             Bewerte die einzelnen Komponenten völlig unabhängig voneinander, wenn möglich \
             Vergleiche am besten die einzelnen Sätze innerhalb derselben Risikokategorie miteinander, um unterschiedlich schweren Risiken möglichst auch unterschiedlich Bewertung zu zuteilen, wenn nötig \
             Zusätzliche Anmerkungen: \
-            Ein hoher TF-IDF-Wert pro Satz bedeutet für das zugehörige Wort nicht automatisch ein hohes Risiko kann über den kompletten Vertrag hinweg betrachtet allerdings sehr prägend sein. \
             Bewerte bitte primär den tatsächlichen Inhalt des Satzes \
             Erfinde keine Risiken und allgemein nichts hinzu \
             Gib eine kurze Begründung deines zugeteilten Risikoscores mit maximal 1-3 Sätzen indem du vor allem darauf eingehst warum dieser Satz ein Risiko für unsere ausgewählte relevante Vertragspartei {relevant_company_name} mit Rolle {relevant_company_role} darstellen könnte. \
             Sollte dies wie oben angemerkt, nicht fall sein, indem es diese nicht betrifft oder kein Risiko für diese darstellt, stelle den Marker 'relevant' entsprechend bitte auf False",
             input=f"Analysiere folgende Tabelle, welche zu einem Vertrag erstellt wurde: {html_category_df}",
             reasoning={
-                "effort": "xhigh" #none, low, medium, high, xhigh, max
+                "effort": "medium" #none, low, medium, high, xhigh, max
             },
             text={
                 "format": {
@@ -501,6 +491,98 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
 
     return df 
 
+def evaluation_of_tfidf_candidates(df_tfidf):
+    tfidf_df = df_tfidf[["id", "page", "text"]].copy()
+    html_tfidf_df = tfidf_df.to_html(index=False) 
+
+    client = OpenAI(api_key="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")
+
+    try:
+
+        response = client.responses.create(
+            model="gpt-5.6-luna",
+            instructions=f"Prüfe für jede übergebene Vertragsstelle auf inhaltliche Verwertbarkeit. \
+                           Das bedeutet relevant=True wird nur gesetzt wenn es sich um vollständige, verständliche und inhaltlich aussagekräftige Vertragsstellen handelt. \
+                            Überschriften, Seitenangaben, Datumsangaben, Signaturen, unvollständige Satzfragmente und isolierte Bezeichnungen setzt du immer auf relevant=False. \
+                            Anders als vorher bewertest du bitte kein Risiko. \
+                            Beantworte jede übergebene ID genau einmal und begründe \
+                            die Entscheidung mit einem kurzen Satz.",
+            input=f"Analysiere folgende Tabelle, welche zu einem Vertrag erstellt wurde: {html_tfidf_df}",
+            reasoning={
+                "effort": "medium" #none, low, medium, high, xhigh, max
+            },
+            text={
+                "format": {
+                    "type": "json_schema", 
+                    "name": "tfidf_candidates",
+                    "strict": True, #KI soll Format zwingend beibehalten
+                    "schema": {
+                        "type": "object", 
+                        "properties":{
+                            "results": { #angegebene Vertragspartner des Dokumentes
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "string"
+                                        },
+                                        "relevant": {
+                                            "type": "boolean"
+                                        },
+                                        "reasoning": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [ #bestimmt dass diese Items gegeben sein müssen
+                                        "id",
+                                        "relevant",
+                                        "reasoning"
+                                    ],   
+                                    "additionalProperties": False #die KI darf keine zusätzlichen Properties neben denen die definiert sind erzeugen                                                           
+                                }
+                            }
+                        },
+                        "required": [
+                            "results"
+                        ],   
+                        "additionalProperties": False #die KI darf keine zusätzlichen Properties neben denen die definiert sind erzeugen
+                    }  
+                },
+                "verbosity": "low" #gibt wieder wie lang bzw. ausführlich die Antwort sein soll
+            },
+            max_output_tokens=5000,
+            store=False 
+        )
+
+    except openai.RateLimitError:
+        print("Rate des aktuellen KI-Assistenten wurde überschritten")
+        return None
+
+    except openai.APIConnectionError:
+        print("Verbindung konnte nicht hergestellt werden")
+        return None
+
+    except openai.APIError as error:
+        print("Sonstiger Fehler aufgetreten:", error)
+        return None
+
+    results_dict = json.loads(response.output_text)
+
+    results = results_dict["results"]
+
+    df = df_tfidf.copy()
+    df["relevant"] = False
+    df["reasoning"] =""
+
+    for result in results:
+        condition_df = df["id"] == result["id"]
+        df.loc[condition_df, "relevant"] = result["relevant"]
+        df.loc[condition_df, "reasoning"] = result["reasoning"]
+
+    return df 
+
+
 def can_distinct_individual(company1: dict, company2: dict, stated_individual: str):
     company1_name = remove_unnecessary(company1['name'])
     company2_name = remove_unnecessary(company2['name'])
@@ -514,6 +596,13 @@ def can_distinct_individual(company1: dict, company2: dict, stated_individual: s
 
     if match_2 and not match_1:
         return True, company2, company1
+
+    print(company1['name'])
+    print(company2['name'])
+    print(stated_individual)
+
+    print(company1_name)
+    print(company2_name)
 
     return False, None, None
 
