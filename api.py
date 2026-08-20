@@ -5,7 +5,7 @@ from read_dataset import gain_access
 import re
 
 #WICHTIG: VOR UPLOAD TO GITHUB IMMER RAUSLÖSCHEN
-Chat_GPT_Luna_Key: str = "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"
+Chat_GPT_Luna_Key: str = ""
 
 def evaluate_primary_subjects(contract: str = None, name: str = None):
     content: str
@@ -16,7 +16,7 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
 
     print(name)
 
-    client = OpenAI(api_key="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")
+    client = OpenAI(api_key="")
 
     try:
         response = client.responses.create(
@@ -166,7 +166,7 @@ def determine_contract_type(contract: str = None):
 
     content = contract
 
-    client = OpenAI(api_key="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")
+    client = OpenAI(api_key="")
 
     try:
         response = client.responses.create(
@@ -252,7 +252,7 @@ def contract_summary(contract: str = None):
     else:
         contract_type, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
 
-    client = OpenAI(api_key="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")
+    client = OpenAI(api_key="")
 
     try:
         response = client.responses.create(
@@ -322,7 +322,7 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
     category_df = df.loc[df["risk_category"] == risk_category, ["id", "page", "text", "risk_category", "risk_words"]].copy()
     html_category_df = category_df.to_html(index=False) 
 
-    client = OpenAI(api_key="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")
+    client = OpenAI(api_key="")
 
     try:
 
@@ -495,7 +495,7 @@ def evaluation_of_tfidf_candidates(df_tfidf):
     tfidf_df = df_tfidf[["id", "page", "text"]].copy()
     html_tfidf_df = tfidf_df.to_html(index=False) 
 
-    client = OpenAI(api_key="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")
+    client = OpenAI(api_key="")
 
     try:
 
