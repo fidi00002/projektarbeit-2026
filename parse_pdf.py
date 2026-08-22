@@ -55,8 +55,12 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
         if (file_name_classification.lower() == possible_contract_classification.lower()):
             correct = 1
 
+    print(file_name_classification.lower(), "\n")
+
+    print(possible_contract_classification.lower(), "\n")
+
     if correct:
-        contract_classification = possible_contract_classification
+        contract_classification = file_name_classification
     else:
         contract_classification = determine_contract_type(full_text)
     

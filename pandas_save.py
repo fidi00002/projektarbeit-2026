@@ -117,26 +117,26 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         selected_indices = contract_indices.get(metadata_contract["contract_type"].lower())
 
         if selected_indices is None:
-            raise ValueError("Fehler bei Vertragserkennung")
+            raise ValueError("Fehler bei Korpus-Matching")
         
-        dataframe_foundation = []
+        # dataframe_foundation = []
 
-        for i in range(len(selected_indices)):
-            output: dict = summary['data'][selected_indices[i]] #erstellen von dictionary, dass Grundlage für DF bildet
-            str; contract_title = output.get('title')
-            paragraphs: list = (output.get('paragraphs'))
-            for item in paragraphs:
-                content: str = item['context']
-            dataframe_foundation.append({
-                "contract": f"C{selected_indices[i]+1}", 
-                "title": contract_title, #title Zeile
-                "text": content #text Zeile
-            })
+        # for i in range(len(selected_indices)):
+        #     output: dict = summary['data'][selected_indices[i]] #erstellen von dictionary, dass Grundlage für DF bildet
+        #     str; contract_title = output.get('title')
+        #     paragraphs: list = (output.get('paragraphs'))
+        #     for item in paragraphs:
+        #         content: str = item['context']
+        #     dataframe_foundation.append({
+        #         "contract": f"C{selected_indices[i]+1}", 
+        #         "title": contract_title, #title Zeile
+        #         "text": content #text Zeile
+        #     })
 
-        print(f"\n\n{metadata_contract['contract_type']}\n\n")
+        # print(f"\n\n{metadata_contract['contract_type']}\n\n")
 
 
-        df = pd.DataFrame(dataframe_foundation)
+        # df = pd.DataFrame(dataframe_foundation)
 
         sentence_dataset = {}
 
@@ -165,18 +165,15 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         tf_df["tf"] = tf_df["amount_of_word"]/tf_df["word_amount_overall"] #calculation of tf
 
 
-
-
-
         #calculation of IDF
         idf_foundation = [] #entwurf des vorherigen dataframes diesmal allerdings nur als foundation für den idf score
-        for i in range(len(service_indices)): #evtl. später zu globalem score ändern
-            output = summary["data"][service_indices[i]]
+        for i in range(len(selected_indices)): #evtl. später zu globalem score ändern
+            output = summary["data"][selected_indices[i]]
             paragraphs = output.get("paragraphs") 
             for item in paragraphs:
                 content = item["context"]
             idf_foundation.append({
-                "contract": f"C{service_indices[i] + 1}",
+                "contract": f"C{selected_indices[i] + 1}",
                 "text": content
             })
         idf_df = pd.DataFrame(idf_foundation)

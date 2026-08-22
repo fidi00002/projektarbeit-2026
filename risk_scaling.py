@@ -33,24 +33,6 @@ risk_field: dict = {
             "sabotage", "wars", "injunction|restraining", #Unterlassung von spezifischer Tätigkeit
             "infringment", #Verstoß
             "misconduct|violation" #Verletzung von Vertragsbedingungen
-        },
-
-        "context": { #Sachen die erst auf den Context bezogen schlimm werden können -> am besten zusätzlich als Sätze an Ki übergeben
-            "term", "shall", "not", "invoice", "arising", #auftretende Umstände
-            "without", "price + ggf. increase", "reasonable", #vertretbar
-            "assignment", #Zuweisung
-            "defend", #möglicherweise Verteidigung auf eigene Kosten
-            "governed", #sich richten nach etwas
-            "limit", #potentieller Haftungsausschluss
-            "indirect|direct + damage", "minimum", #auf Abnahme bezogen
-            "patent | trademark", #evtl. auf Nutzungsrechte bezogen
-            "Subrogation", #Übernahme von Ansprüchen|Rechten einer Partei durch eine andere,
-            "Law | Rights", #potentielle Anwendung spezieller Rechte
-            "consent" #Zustimmung
-        },
-
-        "content": {#auf content oder Vertragsart des jeweiligen Vertrages bezogen
-
         }
     }
 
@@ -83,9 +65,9 @@ def calculation_of_risk_score(df: pd.DataFrame, use_all_risks: bool, u_pri_le, u
     financial_category_score = foundation_calculation(financial_risk_values)
     operative_category_score = foundation_calculation(operative_risk_values)
 
-    legal_category_score = min(10, (u_pri_le* (0.5 * first_risk_value_legal + 0.5 * legal_category_score if legal_risk_values else first_risk_value_legal)))
-    financial_category_score = min(10,(u_pri_fi*(0.5 * first_risk_value_financial + 0.5 * financial_category_score if financial_risk_values else first_risk_value_financial)))
-    operative_category_score = min(10, (u_pri_op*(0.5 * first_risk_value_operative + 0.5 * operative_category_score if operative_risk_values else first_risk_value_operative)))
+    legal_category_score = min(10, (u_pri_le  * (0.5 * first_risk_value_legal + 0.5 * legal_category_score if legal_risk_values else first_risk_value_legal)))
+    financial_category_score = min(10,(u_pri_fi * (0.5 * first_risk_value_financial + 0.5 * financial_category_score if financial_risk_values else first_risk_value_financial)))
+    operative_category_score = min(10, (u_pri_op * (0.5 * first_risk_value_operative + 0.5 * operative_category_score if operative_risk_values else first_risk_value_operative)))
 
     median_categories = (legal_category_score + financial_category_score + operative_category_score)/3
 

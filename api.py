@@ -4,7 +4,7 @@ import json
 from read_dataset import gain_access
 import re
 
-#WICHTIG: VOR UPLOAD TO GITHUB IMMER RAUSLÖSCHEN
+#WICHTIG: VOR UPLOAD TO GITHUB IMMER RAUSLÖSCHEN; neuer Api Key nötig alter wurde revoked
 Chat_GPT_Luna_Key: str = ""
 
 def evaluate_primary_subjects(contract: str = None, name: str = None):
@@ -23,7 +23,7 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
             model="gpt-5.6-luna",
             #kann auch noch strukturiert werden
             input=f"Bitte analysiere mir den folgenden Vertrag anhand dessen Vertragsparteien und der zugehörigen Haupt-/Nebenleistungspflichten und allgemeienr \
-            Recht und Pflichten dieser, und gib gleichzeitig Verweise auf deine gefundenen Passagen, um dieser zu belegen. Vertragsinhalt: {content}",
+            Recht und Pflichten dieser. Vertragsinhalt: {content}",
             instructions = "Du bist ein Contract Analysis Tool und richtest in dieser Analyse deinen Fokus auf die einzelnen Vertragsparteien:. \n"
                 "Bitte identifiziere für beide Vertragsparteien den Namen und die jeweilige Rolle im Vertrag z.B. Distributor, Licensor, Licensee, Supplier, Customer oder eine andere Rolle, welche aus diesem Vertrag hervorgeht. Gib beides bitte getrennt voneinander." \
                 "Erfinde die Rolle auch nicht, sondern leite diese ausschließlich aus dem Verttrag ab."
@@ -316,7 +316,7 @@ def contract_summary(contract: str = None):
 
     print(f"Eine kurze Zusammenfassung der zentralen Aspekte des Vertragsdokumentes: \n {contract_summary}")
 
-    return contract_summary
+    return contract_central_aspects['summary']
 
 def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_company_role, irrelevant_company_name, irrelevant_company_role, risk_category, relevant_scoring_prompt):
     category_df = df.loc[df["risk_category"] == risk_category, ["id", "page", "text", "risk_category", "risk_words"]].copy()
@@ -491,7 +491,7 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
 
     return df 
 
-def evaluation_of_tfidf_candidates(df_tfidf):
+def evaluation_of_tfidf_candidates(df_tfidf, relevant_company, irrelevant_company):
     tfidf_df = df_tfidf[["id", "page", "text"]].copy()
     html_tfidf_df = tfidf_df.to_html(index=False) 
 
@@ -503,6 +503,8 @@ def evaluation_of_tfidf_candidates(df_tfidf):
             model="gpt-5.6-luna",
             instructions=f"Prüfe für jede übergebene Vertragsstelle auf inhaltliche Verwertbarkeit. \
                            Das bedeutet relevant=True wird nur gesetzt wenn es sich um vollständige, verständliche und inhaltlich aussagekräftige Vertragsstellen handelt. \
+                           Ebenso wichtig ist das die übergebene Stelle wichtig oder relevant für die Company {relevant_company['name']} mit der Rolle {[relevant_company['role']]} ist, dann bitte relevant=True setzen. \
+                           Sollte diese nur wichtig für das Gegenspieler Unternehmen {irrelevant_company['name']} mit der Rolle {irrelevant_company['role']} im Vertrag sein, aknnst du diesen ebenfalls auf relevant = False setzen. \
                             Überschriften, Seitenangaben, Datumsangaben, Signaturen, unvollständige Satzfragmente und isolierte Bezeichnungen setzt du immer auf relevant=False. \
                             Anders als vorher bewertest du bitte kein Risiko. \
                             Beantworte jede übergebene ID genau einmal und begründe \
