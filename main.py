@@ -212,9 +212,9 @@ def analyse_contract():
     financial_prompt = "Berücksichtige insbesondere (mögliche) Zahlungsverpflichtungen, Vertragsstrafen, welche bspw. bei nichterfüllung von bedingungen eintreten können, zusätzliche oder schwer kalkulierbare Kosten, Umsatz- oder Ertragsverlust, Schadensersatz und Haftungskosten sowie sonstige finanzielle Belastungen"
     operative_prompt = "Berücksichtige insbesondere (mögliche) Einschränkungen des Betriebs, Liefer- und Leistungspflichten, Exklusivitätsbindungen, Qualitäts- und Gewährleistungsforderungen, Abhängikeiten von der anderen Vertragspartei sowie Risken, welche durch Verzögerungen oder Leistungsausfälle entstehen können"
 
-    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "legal", legal_prompt) #eventuell noch runterbrechen auf nur dictionary übergeben
-    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "financial", financial_prompt) #und dieses nochmal selbst in aufrufender funktion
-    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "operative", operative_prompt) #auslesen
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "legal", legal_prompt, metadata_contract['contract_type']) #eventuell noch runterbrechen auf nur dictionary übergeben
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "financial", financial_prompt, metadata_contract['contract_type']) #und dieses nochmal selbst in aufrufender funktion
+    ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "operative", operative_prompt, metadata_contract['contract_type']) #auslesen
 
     with pd.option_context("display.max_rows", None):
         print(ultimate_df_with_scoring[["severity", "scope_of_impact", "reversibility", "safety_guard", "controllability", "risk_value"]])
@@ -267,7 +267,7 @@ def analyse_contract():
 
     for row in highest5_tfidf_values.itertuples(index=False):
         tfidf_output.append(
-            f"{row.text}"
+            f"{row.text[:1].upper() + row.text[1:]}.\n"
             f"Relevanz: {row.tfidf_level}\n"
             f"Begründung: {row.reasoning}\n"
             f"Fundstelle: Seite {row.page}\n"
@@ -296,51 +296,15 @@ def analyse_contract():
     text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
     final_analysis_as_text = f"Vertragsanalyse \n\nDatei: {last} \n\nVertragspartei: {relevant_company['name']} ({relevant_company['role']})\nDie Risikobewertung folgt aus der Sicht dieser Partei\n\nGegenspieler: {irrelevant_company['name']} ({irrelevant_company['role']})\n\nVertragsart: {metadata_contract['contract_type']}\n\n\
-Risikowert: {median_risk_score} \n\nSetzt sich zusammen aus: \n\n Rechtlichem Risiko: {legal_risk_score} \n Finanziellem Risiko: {financial_risk_score}\n Operativem Risiko: {operative_risk_score} \n\n\
+Risikowert: {median_risk_score} - {assign_risk_level(median_risk_score)}\n\nSetzt sich zusammen aus: \n\n Rechtlichem Risiko: {legal_risk_score} - {assign_risk_level(legal_risk_score)}\n Finanziellem Risiko: {financial_risk_score} - {assign_risk_level(financial_risk_score)}\n Operativem Risiko: {operative_risk_score} - {assign_risk_level(operative_risk_score)}\n\n\
+Mit den gewählten Gewichtung:\nFinanziell: {priority_text[finance_current.get()]}, Legal: {priority_text[legal_current.get()]}, Operative: {priority_text[operative_current.get()]}\n\n\
 Zusammenfassung: \n{contract_sum}\n\n\
-    Rechte und Pflichten der beiden Firmen: \n\n{relevant_company_description} \n\n{irrelevant_company_description} \n\n\
-    Die folgenden Sätze stellen das größte Risiko der einzelnen Kategorien dar: \n\nRechtlich: \n\n {legal_risk_text} \n\n\
-    Finanziell: \n\n {financial_risk_text} \n\nOperativ: \n\n{operative_risk_text} \n\n\
-    Dazu folgen die Sätze, welche laut berechneten TF-IDF Werten statistisch besonders auffällig sind: \n\n{tfidf_output_text} \n\n"
+Rechte und Pflichten der beiden Firmen: \n\n{relevant_company_description} \n\n{irrelevant_company_description} \n\n\
+Die folgenden Sätze stellen das größte Risiko der einzelnen Kategorien dar: \n\nRechtlich: \n\n {legal_risk_text} \n\n\
+\nFinanziell: \n\n {financial_risk_text} \n\n\nOperativ: \n\n{operative_risk_text} \n\n\
+Dazu folgen die Sätze, welche laut berechneten TF-IDF Werten statistisch besonders auffällig sind: \n\n{tfidf_output_text} \n\n"
 
-    #später hier genauen text aus allen funktionen zusammenstellen
-
-#     final_analysis_as_text = """Gerne, hier ist die Analyse des von Ihnen bereitgestellten "DISTRIBUTOR AGREEMENT" von LIMEENERGYCO.
-
-# **Gesamtbewertung des Risikos:** 6/10
-
-# **Begründung der Risikobewertung:**
-
-# Der Vertrag weist ein moderates Risiko auf, das sich aus einer Kombination von Faktoren ergibt, die sowohl Chancen als auch potenzielle Fallstricke für beide Parteien bergen.
-
-# *   **Exklusivität und Marktgebiet (Abschnitt 1.1, 1.6):** Die Exklusivität für den "Market" (Bundesstaat Illinois) ist ein Vorteil für den Distributor, birgt aber auch das Risiko, dass die Mindestabnahmemengen nicht erreicht werden und die Exklusivität entzogen wird. Die detaillierten Mindestmengen (1.6) sind ein klarer Indikator für das Risiko, diese nicht zu erfüllen.
-# *   **Vertragsdauer und Verlängerung (Abschnitt 1.3):** Eine anfängliche Laufzeit von 10 Jahren mit jährlichen Verlängerungsoptionen ist lang. Dies bietet Stabilität, aber auch das Risiko, dass eine Partei über einen längeren Zeitraum an eine ungünstige Vereinbarung gebunden ist.
-# *   **Preisgestaltung und Anpassung (Abschnitt 2.4):** Die Preisgestaltung ist an den Verbraucherpreisindex (CPI) gekoppelt, was eine gewisse Vorhersehbarkeit bietet. Das Recht des Unternehmens, Preise aus anderen Gründen anzupassen (basierend auf Kosten oder Marktnachfrage), birgt jedoch ein Risiko für den Distributor, wenn diese Anpassungen seine Gewinnmargen schmälern. Die Klausel, dass Preiserhöhungen aufgrund der Marktnachfrage "nicht so groß sein dürfen, dass sie den Distributor seines normalen und üblichen Gewinnmargen berauben" (2.4(B)), ist ein wichtiger Schutz für den Distributor, aber die Auslegung "normal und üblich" kann zu Streitigkeiten führen.
-# *   **Produktverbesserungen und neue Produkte (Abschnitt 3.1, 7):** Das Recht des Unternehmens, Produkte zu verbessern oder neue einzuführen, ist sowohl eine Chance als auch ein Risiko. Der Distributor hat ein Optionsrecht für neue Produkte (7.1), aber die Bedingungen werden in separaten Vereinbarungen festgelegt (7.3), was zu Unsicherheit führen kann. Die Möglichkeit, dass alte Produkte eingestellt werden, wenn neue besser oder preislich vergleichbar sind (3.1), kann die Produktpalette des Distributors beeinflussen.
-# *   **Gewährleistung und Haftung (Abschnitt 2.2, 2.6, 3.3, 3.4, 5.3):** Die Gewährleistung von 24 Monaten (3.3) ist Standard. Die Regelungen zur Fehlerbehebung und Kostentragung bei Mängeln (2.6(B), 3.4) sind relativ klar, aber die Möglichkeit, dass das Unternehmen die Verantwortung bestreitet (3.4), birgt ein Risiko. Die gegenseitige Freistellung (Indemnification) in Abschnitt 5.3 ist ein wichtiger Punkt zur Risikominimierung, aber die Auslegung von "Fahrlässigkeit oder Verschulden" kann zu Meinungsverschiedenheiten führen.
-# *   **Vertragsbruch und Kündigung (Abschnitt 4.2):** Die Kündigungsmöglichkeiten sind relativ standardmäßig, aber die 30-tägige Kündigungsfrist bei Nichterfüllung (4.2(b)) könnte für den Distributor knapp sein, wenn er einen Fehler nicht schnell beheben kann.
-# *   **Repurchase-Klausel (Abschnitt 4.4):** Die Option des Unternehmens, Produkte nach Vertragsende zurückzukaufen, ist ein potenzieller Schutz für den Distributor, aber die Bedingungen (nur auf Wunsch des Unternehmens, abzüglich Rabatte etc.) sind nicht vollständig zugunsten des Distributors gestaltet.
-# *   **Vertraulichkeit und Nicht-Wettbewerb (Abschnitt 3.6, 5.6, 5.7):** Die Klauseln zur Vertraulichkeit und zum Verbot der Anwerbung von Mitarbeitern und Kunden sind für das Unternehmen vorteilhaft, aber die 12- bzw. 18-monatigen Fristen nach Vertragsende können die Geschäftsmöglichkeiten des Distributors einschränken.
-
-# **Zusammenfassung der wichtigsten Punkte des Vertrages:**
-
-# Dieser "DISTRIBUTOR AGREEMENT" regelt die Beziehung zwischen Electric City Corp. ("Company") und Electric City of Illinois LLC ("Distributor") für den Vertrieb von "Energy Saver"-Produkten in Illinois.
-
-# *   **Exklusivität:** Der Distributor erhält die exklusive Vertriebsrechte für die Produkte in Illinois.
-# *   **Vertragslaufzeit:** Der Vertrag hat eine anfängliche Laufzeit von 10 Jahren, mit jährlichen Verlängerungsoptionen bis zu weiteren 10 Jahren.
-# *   **Mindestabnahmemengen:** Der Distributor muss bestimmte Mindestmengen an Produkten pro Jahr abnehmen, um seine Exklusivrechte zu behalten. Bei Nichterfüllung können die exklusiven Rechte neu bewertet werden, es sei denn, es liegt eine höhere Gewalt vor.
-# *   **Preisgestaltung:** Die Preise sind anfangs festgelegt und werden jährlich an den Verbraucherpreisindex (CPI) angepasst. Das Unternehmen kann Preise auch aus anderen Gründen anpassen, muss dabei aber die Gewinnmargen des Distributors berücksichtigen.
-# *   **Produktverbesserungen und neue Produkte:** Das Unternehmen kann Produkte verbessern oder neue einführen. Der Distributor hat ein Optionsrecht, diese ebenfalls exklusiv zu vertreiben, wobei die Konditionen in separaten Verträgen geregelt werden.
-# *   **Gewährleistung:** Das Unternehmen gewährt eine 24-monatige Garantie auf die Produkte. Die Kosten für die Behebung von Mängeln werden in der Regel vom Unternehmen getragen.
-# *   **Zahlungsbedingungen:** Der Distributor muss innerhalb von 30 Tagen nach Erhalt der Produkte bezahlen.
-# *   **Kündigung:** Der Vertrag kann aus wichtigem Grund (z.B. Zahlungsverzug, wesentliche Vertragsverletzung, Insolvenz) mit 30 Tagen Frist gekündigt werden.
-# *   **Rückkauf:** Nach Vertragsende hat das Unternehmen die Option, unverkaufte Produkte vom Distributor zurückzukaufen.
-# *   **Haftung und Freistellung:** Beide Parteien verpflichten sich zur gegenseitigen Freistellung bei Verstößen gegen den Vertrag, Fahrlässigkeit oder Verletzung von Schutzrechten Dritter. Das Unternehmen sichert zu, eine Produkthaftpflichtversicherung abzuschließen und den Distributor als zusätzlichen Versicherungsnehmer einzutragen.
-# *   **Vertraulichkeit und Wettbewerbsbeschränkungen:** Beide Parteien müssen vertrauliche Informationen schützen. Der Distributor unterliegt nach Vertragsende Beschränkungen bezüglich der Anwerbung von Mitarbeitern und Kunden des Unternehmens sowie dem Verkauf von Konkurrenzprodukten.
-# *   **Anwendbares Recht:** Das Recht des Staates Illinois gilt für diesen Vertrag."""
-
-    text.insert("end", final_analysis_as_text) #benutzen von label damit user nicht ausversehen in die anzeige schreiben kann & font=()
-    # label.config(anchor="center", font=("Times New Roman", 20, "bold"), relief="solid")
+    text.insert("end", final_analysis_as_text) 
     lines = final_analysis_as_text.splitlines()
 
     text.config(height=min(max(len(lines), 10), 40), width=100, state="disabled")
@@ -352,7 +316,8 @@ def risk_output_construction(risk_df):
     for rank, row in enumerate(risk_df.itertuples(index=False), start=1):
         output.append(
             #f"{rank}. {row.risk_category.capitalize()} - Risk"
-            f"{rank}. Vertragsstelle: {row.text} - Risiko: {row.risk_value}/10\n"
+            f"{rank}. Vertragsstelle: {row.text[:1].upper() + row.text[1:]}.\n\n"
+            f"Risiko: {row.risk_value}/10 - {assign_risk_level(row.risk_value)}\n"
             f"Begründung: {row.reasoning}\n"
             f"Unterfaktoren: \n"
             f"Severity {row.severity}/2, "
@@ -381,6 +346,18 @@ def company_setup(company):
             text += f"{i+1}. {company['individual_responsibilities'][i]}\n"
 
     return text
+
+def assign_risk_level(risk_value: int):
+     if risk_value == 0:
+          return "kein Risiko"
+     if risk_value <= 3:
+          return "geringes Risiko"
+     if risk_value < 7:
+          return "moderates Risiko"
+     if risk_value < 9:
+          return "hohes Risiko"
+
+     return "sehr hohes Risiko"
 
     
 

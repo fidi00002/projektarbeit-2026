@@ -55,9 +55,9 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
         if (file_name_classification.lower() == possible_contract_classification.lower()):
             correct = 1
 
-    print(file_name_classification.lower(), "\n")
+    print(file_name_classification.lower() if file_name_classification else "Nicht im Dateinamen gefunden", "\n")
 
-    print(possible_contract_classification.lower(), "\n")
+    print(possible_contract_classification.lower() if possible_contract_classification else "Kein klassifizierbarer Titel gefunden", "\n")
 
     if correct:
         contract_classification = file_name_classification

@@ -63,9 +63,9 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         
         else: #unterteilt text in sätze
 
-            content_replace = re.sub('\s', " ", content_strip) #entfernt newline, tab und komprimiert diese zu normalen leerzeichen
+            content_replace = re.sub("\s+", " ", content_strip) #entfernt newline, tab und komprimiert diese zu normalen leerzeichen
 
-            content_further_seperated = re.split("\.", content_replace) #separiert content nach "."-zeichen
+            content_further_seperated = re.split("\.\s*", content_replace) #separiert content nach "."-zeichen
 
             return content_further_seperated
 

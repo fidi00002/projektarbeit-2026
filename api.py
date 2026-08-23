@@ -318,7 +318,7 @@ def contract_summary(contract: str = None):
 
     return contract_central_aspects['summary']
 
-def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_company_role, irrelevant_company_name, irrelevant_company_role, risk_category, relevant_scoring_prompt):
+def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_company_role, irrelevant_company_name, irrelevant_company_role, risk_category, relevant_scoring_prompt, contract_category):
     category_df = df.loc[df["risk_category"] == risk_category, ["id", "page", "text", "risk_category", "risk_words"]].copy()
     html_category_df = category_df.to_html(index=False) 
 
@@ -329,7 +329,7 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
         response = client.responses.create(
             model="gpt-5.6-luna",
             instructions=f"Du bist ein Contract Analysis Tool \
-            Entscheide zunächst einmal für jede einzelne Zeile der übergebenen Tabelle für die Kategorie 'relevant', ob die jeweils angegebenen Sätze aus Sicht der Vertragspartei: {relevant_company_name}, welche die Rolle {relevant_company_role} innerhalb von diesem einnimmt und überhaupt relevant sind d.h. überhaupt ein Risiko für diese darstellen könnten \
+            Entscheide zunächst einmal für jede einzelne Zeile der übergebenen Tabelle für die Kategorie 'relevant', ob die jeweils angegebenen Sätze aus Sicht der Vertragspartei: {relevant_company_name}, welche die Rolle {relevant_company_role} innerhalb von diesem einnimmt und überhaupt ein Risiko für diese darstellen könnten \
             Falls diese nur ein Risiko für die Gegenpartei {irrelevant_company_name}, welche die Rolle {irrelevant_company_role} innerhalb des Vertrages einnimmt, darstellt kannst du diese für die Kategorie 'relevant' gerne auf False setzen \
             Falls dies zutrifft bewerte die Kategorie 'relevant' mit True ansonsten mit False \
             Falls du 'relevant' auf True gesetzt hast bewerte die Zeile anschließend orientiert anhand von folgendem Prompt: \
@@ -362,6 +362,20 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
             1 = Risikokontrolle liegt nicht allein in der Hand von der ausgewählten, relevanten Vertragspartei, ist nur eingeschränkt kontrollierbar und die Risikokontrolle ist damit nur teilweise vorhanden\
             2 = Risikokontrolle ist nur schwer oder gar nicht durch die ausgewählte, relevante Vertragspartei kontrollierbar\
             \
+            Kalibrierungsregeln: \
+            Wenn die Spalte 'relevant' auf True steht, bedeutet das lediglich dass eine konkrete negative Risikoexposition erkennbar ist. Das hat allerdings nicht automatisch zu bedeuten, dass zwingend ein mindestens mittleres bis hohes Risiko vorliegen muss. \
+            Den Wert 0 verwendest du, wenn der übergebene Vertragsausschnitt keine konkrete Grundlage für eine negative Bewertung der jeweiligen Komponente bietet. \
+            Du sollst keine fehlenden Schutzmechanismen oder schwerwiegenden Folgen allein aus fehlendem Kontext ableiten. \
+            Den Wert 2 vergibst du bitte nur bei einer ausdrücklich im Text erkennbaren, besonders starken Ausprägung und muss aber auch durch den Vertragstext gerechtfertigt und begründbar sein. \
+            Insbesondere darf Safety_Guard nicht allein deshalb mit 2 bewertet werden, weil in der isolierten Vertragsstelle kein Schutzmechanismus erwähnt wird. \
+            Nutze die folgende Zuordnung von Gesamtwerte als Orientierung, allerdings nicht als erzwungene Verteilung:\
+            1 bis 3 = geringes Risiko,\
+            4 bis 6 = moderates Risiko,\
+            7 bis 8 = hohes Risiko,\
+            9 bis 10 = außergewöhnliches hohes, sehr schwerwiegendes Risiko,\
+            Eine für den entsprechenden Vertrag und zugehörige Vertragskategorie: {contract_category} gewöhnliche, begrenzte Zahlungs-, Informations- oder Verwaltungspflicht soll nicht als automatisch hohes Risiko bewertet werden.\
+            Und ebenfalls sehr wichtig: Bewerte dasselbe negative Merkmal nicht mehrfach in verschiedenen Komponenten, wenn die jeweilige Komponente nicht eigenständig begründet ist.\
+            Ebenso sehr wichtig, damit eine Datei ein anerkanntes Risiko darstellen kann, muss diese mindestens einen 1 nach der Wertung was heißt andernfalls ist diese auf relevant='False' zu setzen\
             Bewerte die einzelnen Komponenten völlig unabhängig voneinander, wenn möglich \
             Vergleiche am besten die einzelnen Sätze innerhalb derselben Risikokategorie miteinander, um unterschiedlich schweren Risiken möglichst auch unterschiedlich Bewertung zu zuteilen, wenn nötig \
             Zusätzliche Anmerkungen: \
@@ -456,7 +470,7 @@ def evaluation_of_ki_regarding_candidates(df, relevant_company_name, relevant_co
                 },
                 "verbosity": "low" #gibt wieder wie lang bzw. ausführlich die Antwort sein soll
             },
-            max_output_tokens=200000,
+            max_output_tokens=50000,
             store=False 
         )
 
