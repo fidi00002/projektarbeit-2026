@@ -56,27 +56,28 @@ def analyse_contract():
     operative_scale = Scale(root, from_=1, to=5, orient=HORIZONTAL, width=20, length=240, showvalue=False, tickinterval=2, variable = operative_current, command= lambda value: operative_text.set(priority_text[int(float(value))]))
     company_entry = tk.Entry(root, textvariable=company_name, width=40)
 
-    tk.Label(root, textvariable=finance_text).grid(row=2, column=1)
-    tk.Label(root, textvariable=legal_text).grid(row=4, column=1)
-    tk.Label(root, textvariable=operative_text).grid(row=6, column=1)
+    tk.Label(root, textvariable=finance_text).grid(row=5, column=1)
+    tk.Label(root, textvariable=legal_text).grid(row=7, column=1)
+    tk.Label(root, textvariable=operative_text).grid(row=9, column=1)
 
-    financial_scale.grid(row=3, column=1)
-    legal_scale.grid(row=5, column=1)
-    operative_scale.grid(row=7, column=1)
+    financial_scale.grid(row=6, column=1)
+    legal_scale.grid(row=8, column=1)
+    operative_scale.grid(row=10, column=1)
     company_entry.grid(row=1, column=1) #NEU
 
     financial_scale.set(3)
     legal_scale.set(3)
     operative_scale.set(3)
 
-    root.title("Vertragsanalyse - Vorabstimmung")
+    root.title("Vertragsanalyse - benötigte Daten")
     
-    all_label = tk.Label(root, text="Would you like to customise the risk evaluation, or would you rather use the default settings?")
-    fin_label = tk.Label(root, text="Financial")
-    legal_label = tk.Label(root, text="Legal")
-    operative_label = tk.Label(root, text="Operative")
+    all_label = tk.Label(root, text="Würden Sie die Risikobewertung gerne persönlich auf Sie abstimmen? - wenn nicht lassen Sie die Regler auf 'neutral' gestellt.")
+    hint_label = tk.Label(root, text="(-> Erkennbar an bspw. LLC, Inc. ... hinter dem Namen)")
+    fin_label = tk.Label(root, text="Priorität des finanziellen Risikos")
+    legal_label = tk.Label(root, text="Priorität des rechtlichen Risikos")
+    operative_label = tk.Label(root, text="Priorität des operativen Risikos")
 
-    com_label = tk.Label(root, text="Name of your Company (please exactly as written in the contract)") #NEU
+    com_label = tk.Label(root, text="Der rechtliche Name ihrer Firma (bitte genauso geschrieben, wie im Vertrag selbst)") #NEU
 
     # def add_labels(row):
     #     label_under_scale = tk.Frame(root)
@@ -86,20 +87,21 @@ def analyse_contract():
     #     tk.Label(label_under_scale, text="Neutral").pack(side="left", expand=True)
     #     tk.Label(label_under_scale, text="Sehr hohe Priorität").pack(side="right")
 
-
-    all_label.grid(row=0)
+    
     com_label.grid(row=1, column=0)
-    fin_label.grid(row=2, column=0)
-    legal_label.grid(row=4, column=0)
-    operative_label.grid(row=6, column=0)
+    hint_label.grid(row=2, column=0)
+    all_label.grid(row=4, column=0)
+    fin_label.grid(row=6, column=0)
+    legal_label.grid(row=8, column=0)
+    operative_label.grid(row=10, column=0)
 
     # add_labels(3)
     # add_labels(5)
     # add_labels(7)
 
-    button = tk.Button(root, text="insert", width=25, command=root.destroy)
+    button = tk.Button(root, text="Vertragsanalyse starten", width=40, command=root.destroy)
 
-    button.grid(row=8)
+    button.grid(row=13, column=0)
 
     root.mainloop()
 
