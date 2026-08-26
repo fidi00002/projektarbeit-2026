@@ -72,6 +72,12 @@ deactivate
 ```
 verlassen werden
 
-Es gibt folgende Projektdateien:
+Datensatz
+
+Dieses Projekt verwendet das Contract Understanding Atticus Dataset (CUAD) des Atticus Project.
+
+CUAD ist unter der Creative Commons Attribution 4.0 License (CC BY 4.0) veröffentlicht.
+
+Quelle: https://huggingface.co/datasets/theatticusproject/cuad
 
 
