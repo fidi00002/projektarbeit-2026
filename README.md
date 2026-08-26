@@ -84,4 +84,6 @@ CUAD ist unter der Creative Commons Attribution 4.0 License (CC BY 4.0) veröffe
 
 Quelle: https://huggingface.co/datasets/theatticusproject/cuad
 
+Die im Ordner `original_contracts/` enthaltenen Testverträge stammen aus dem CUAD-Datensatz und dienen zum Testen der Anwendung.
+
 
