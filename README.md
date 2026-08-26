@@ -72,6 +72,8 @@ deactivate
 ```
 verlassen werden
 
+Ganz wichtig in die leeren client = OpenAI(api_key="Platzhalter"), muss anstatt des Platzhalters jeweils der API-Key gesetzt werden
+
 Datensatz
 
 Dieses Projekt verwendet das Contract Understanding Atticus Dataset (CUAD) des Atticus Project.
