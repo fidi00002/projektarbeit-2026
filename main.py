@@ -1,12 +1,9 @@
 from parse_pdf import extract_text
-from docx import Document
 import tkinter as tk
 from tkinter import filedialog as fd
 from tkinter import messagebox
 from tkinter import *
 from tkinter.scrolledtext import ScrolledText
-import pandas as pd
-from parse_pdf import extract_text
 from process_data import creation_of_dictionary
 from pandas_save import dataframe_construction_td_idf, attach_tfidf_to_risks, calculate_whole_sentence_tfidf 
 from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates, evaluation_of_tfidf_candidates, contract_summary
@@ -78,15 +75,6 @@ def analyse_contract():
     operative_label = tk.Label(root, text="Priorität des operativen Risikos")
 
     com_label = tk.Label(root, text="Der rechtliche Name ihrer Firma (bitte genauso geschrieben, wie im Vertrag selbst)") #NEU
-
-    # def add_labels(row):
-    #     label_under_scale = tk.Frame(root)
-    #     label_under_scale.grid(row=row, column=1, sticky="ew")
-
-    #     tk.Label(label_under_scale, text="Sehr geringe Priorität").pack(side="left")
-    #     tk.Label(label_under_scale, text="Neutral").pack(side="left", expand=True)
-    #     tk.Label(label_under_scale, text="Sehr hohe Priorität").pack(side="right")
-
     
     com_label.grid(row=1, column=0)
     hint_label.grid(row=2, column=0)
@@ -95,19 +83,11 @@ def analyse_contract():
     legal_label.grid(row=8, column=0)
     operative_label.grid(row=10, column=0)
 
-    # add_labels(3)
-    # add_labels(5)
-    # add_labels(7)
-
     button = tk.Button(root, text="Vertragsanalyse starten", width=40, command=root.destroy)
 
     button.grid(row=13, column=0)
 
     root.mainloop()
-
-    finance_textual: str = priority_text[finance_current.get()]
-    legal_textual: str = priority_text[legal_current.get()]
-    operative_textual: str = priority_text[operative_current.get()]
 
     finance: float = score_mapping[finance_current.get()]
     legal: float = score_mapping[legal_current.get()]
@@ -168,7 +148,7 @@ def analyse_contract():
 
     #HIER BEGINNT DER AUFRUF DER BEARBEITENDEN FUNKTIONEN
 
-    metadata_contract: pd.DataFrame = extract_text(pdf_path)
+    metadata_contract = extract_text(pdf_path)
 
     risk_df = creation_of_dictionary(metadata_contract)
     tfidf_df = dataframe_construction_td_idf(metadata_contract)
@@ -180,26 +160,16 @@ def analyse_contract():
     all_tfidf_values_df = tfidf_sentence_df.copy()
     tfidf_candidate_df = all_tfidf_values_df[all_tfidf_values_df["tfidf_percentile"] >= 0.75].copy()
     tfidf_candidate_df = tfidf_candidate_df.sort_values("tfidf_sentence_score", ascending=False).reset_index(drop=True)
-    with pd.option_context("display.max_rows", None):
-        print(tfidf_candidate_df)
 
     relevant_company, irrelevant_company = evaluate_primary_subjects(contract=metadata_contract["whole_text"], name=company_name)
 
     tfidf_candidate_df_evaluated = evaluation_of_tfidf_candidates(tfidf_candidate_df, relevant_company, irrelevant_company)
-    with pd.option_context("display.max_rows", None):
-        print(tfidf_candidate_df_evaluated)
 
     tfidf_candidate_only_relevant = tfidf_candidate_df_evaluated[tfidf_candidate_df_evaluated["relevant"] == True].copy()
 
     highest5_tfidf_values = (tfidf_candidate_only_relevant.nlargest(5, "tfidf_sentence_score").reset_index(drop=True))
 
-    with pd.option_context("display.max_rows", None):
-        print(highest5_tfidf_values)
-
     ultimate_info_df_with_groupings = attach_tfidf_to_risks(risk_df, tfidf_sentence_df)
-
-    with pd.option_context("display.max_rows", None):
-        print(ultimate_info_df_with_groupings)
 
     ultimate_info_df_with_groupings["relevant"] = False
     ultimate_info_df_with_groupings["risk_value"] = -1
@@ -218,9 +188,6 @@ def analyse_contract():
     ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "financial", financial_prompt, metadata_contract['contract_type']) #und dieses nochmal selbst in aufrufender funktion
     ultimate_df_with_scoring = evaluation_of_ki_regarding_candidates(ultimate_info_df_with_groupings, relevant_company['name'], relevant_company['role'], irrelevant_company['name'], irrelevant_company['role'], "operative", operative_prompt, metadata_contract['contract_type']) #auslesen
 
-    with pd.option_context("display.max_rows", None):
-        print(ultimate_df_with_scoring[["severity", "scope_of_impact", "reversibility", "safety_guard", "controllability", "risk_value"]])
-
     ultimate_df_with_scoring = ultimate_df_with_scoring[ultimate_df_with_scoring["relevant"] == True].copy() #rausläschen aller als 'False' eingestuften und damit nicht relevanten Risiken
 
     highest_risk_values = ultimate_df_with_scoring.sort_values("risk_value", ascending=False)
@@ -234,6 +201,8 @@ def analyse_contract():
     legal_risk_score, financial_risk_score, operative_risk_score, median_risk_score = calculation_of_risk_score(ultimate_df_with_scoring, True, legal, finance, operative)
 
     contract_sum = contract_summary(metadata_contract['whole_text'])
+
+    #dient ebenfalls als übersicht aller möglichen werte zur ausgabe
 
     # all_in_all_results = {
     #     "selected_company": relevant_company,
@@ -283,10 +252,6 @@ def analyse_contract():
 
     relevant_company_description = company_setup(relevant_company)
     irrelevant_company_description = company_setup(irrelevant_company)
-
-    print(highest5_tfidf_values, "\n")
-
-    print(top5_per_category)
 
     #HIER BEGINNT DIE AUSGABE DES OUTPUT FENSTERS
 
@@ -360,8 +325,6 @@ def assign_risk_level(risk_value: int):
           return "hohes Risiko"
 
      return "sehr hohes Risiko"
-
-    
 
 
 analyse_contract()

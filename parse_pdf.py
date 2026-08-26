@@ -1,38 +1,14 @@
 import pdfplumber 
 import re
-from process_data import creation_of_dictionary
-from pandas_save import dataframe_construction_td_idf
-import pandas as pd
-from api import evaluate_primary_subjects, evaluation_of_ki_regarding_candidates, determine_contract_type
-from risk_scaling import calculation_of_risk_score
+from api import determine_contract_type
 
-
-#dateiauswahl fenster
-
-# pfad = C:\Users\finnd\Documents\Informatik\Projektarbeit\Test_Contract\Vertrag1.pdf
-
-#example_dictionary: dict = {
-
-#   "filename" : "",
-#   "contract_type" : "",
-#   "probability_of_correctness_two" :  "",
-#   "list_of_pages": []
-
-#}
-
-#don't know how to handle sentence which goes across to pages yet as well as specifc lines have to be integrated to 
-#later integration of AI and short contract_type analysis if probability of correctness < 0.5
-#creation of foundational contract data
-def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik\Informatik\Projektarbeit\Test_Contract\Vertrag1.pdf") -> dict:
-    #pdf_path = input("Pfad zur PDF Datei: ")
-    probability_of_correctness = 0
+def extract_text(pdf_path:str) -> dict:
     pdf_path_copy: list = pdf_path.rsplit("\\")
     file_name = pdf_path_copy[len(pdf_path_copy)-1] #später direkt in main auslesen lassen und als input variable mitgeben sobald pipeline steht
     contract_sites: list = []
     full_text = []
     possible_contract_classification: str = ""
     with pdfplumber.open(pdf_path) as pdf:
-    #    text: str = pdf.pages[0].extract_text()
         possible_contract_classification = pdf.pages[0].search(r"Distributor Agreement|Service Agreement|Outsourcing Agreement|License Agreement|Supply Agreement", case= False) #versuchen titel abzugreifen
         
         for i in range(0, len(pdf.pages)):
@@ -68,11 +44,3 @@ def extract_text(pdf_path:str = r"C:\Users\finnd\Documents\Wirtschaftsinformatik
                                     listlist_of_pages = contract_sites, whole_text = full_text)
 
     return metadata_contract
-
-#Test zum Überprüfen ob richtige Seitenzahl erkannt 
-
-#muss danach noch mit regulär formatierten Vertragsdokumenten bearbeitet werden
-
-#first_page.text
-
-#extract_text()

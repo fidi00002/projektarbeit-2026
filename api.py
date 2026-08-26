@@ -1,7 +1,6 @@
 import openai
 from openai import OpenAI
 import json
-from read_dataset import gain_access
 import re
 
 #WICHTIG: VOR UPLOAD TO GITHUB IMMER RAUSLÖSCHEN; neuer Api Key nötig alter wurde revoked
@@ -13,8 +12,6 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
     content = contract
 
     stated_name = name
-
-    print(name)
 
     client = OpenAI(api_key="")
 
@@ -144,11 +141,6 @@ def evaluate_primary_subjects(contract: str = None, name: str = None):
     distinct, relevant_company, irrelevant_company = can_distinct_individual(Company_1, Company_2, stated_name)
 
     if distinct:
-        print(f"Bei den beiden Vertragspartner, um welches sich das zu behandelnde Vertragsdokument dreht, handelt es sich um: \n{relevant_company['name']} mit der Rolle {relevant_company['role']}, welche bedeutet {relevant_company['role_description']} \n{irrelevant_company['name']} mit der Rolle {irrelevant_company['role']}, welche bedeutet {irrelevant_company['role_description']}")
-        print(f"{relevant_company['name']} hat folgende Verpflichtungen: \nHauptleistungspflichten: ")
-        for i in range(len(relevant_company['main_obligations'])):
-            print(f"{i}. {relevant_company['main_obligations'][i]}")
-        print(f"{relevant_company}")
 
         return relevant_company, irrelevant_company
     else:
@@ -238,20 +230,11 @@ def determine_contract_type(contract: str = None):
 
     contract_classification = contract_kind['contract_type']
 
-    print(f"Bei dem Vertrag handelt es sich um ein {contract_classification}")
-
     return contract_classification
 
 def contract_summary(contract: str = None):
-    content: str
-    contract_type: str
-    i: int = 0
-
-    if contract is not None:
-        content = contract
-    else:
-        contract_type, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
-
+    content = contract
+    
     client = OpenAI(api_key="")
 
     try:
@@ -311,10 +294,6 @@ def contract_summary(contract: str = None):
 
     #kann aber ggf. auch noch in eine JSON Datei umgewandelt werden, kommt drauf an womit sich besser arbeiten lässt
     contract_central_aspects: dict = json.loads(response.output_text) #erstellt aus dem Json String Object ein Dictionary mit den entsprechenden Daten
-
-    contract_summary = contract_central_aspects['summary']
-
-    print(f"Eine kurze Zusammenfassung der zentralen Aspekte des Vertragsdokumentes: \n {contract_summary}")
 
     return contract_central_aspects['summary']
 
@@ -627,11 +606,3 @@ def remove_unnecessary(string: str):
     string = string.lower()
     string = re.sub(r"\s+", "", string)
     return string
-
-def ordering_of_risk_words():
-    raise NotImplementedError("function hasn't been declared yet")
-
-    
-#evaluate_primary_subjects()
-#determine_contract_type()
-#contract_summary()

@@ -1,19 +1,8 @@
 import json
 import re
-from docx import Document
 import pandas as pd
 import numpy
-from collections import Counter #musste installiert werden
-import nltk #musste installiert werden - momentan noch nicht in benutzung
-from nltk.corpus import stopwords #nicht in Benutzung
-
-#speichern von DataFrames mit Kategorie, Risikowort, Risikosatz und allgemeiner Score des gepeicherten Mediums
-
-#genaue Ausarbeitung allerdings noch unklar
-
-#eventuell nur oder mit zusätzlich wörtern die auch "positiv" gewertet werden können und den entstehenden Risk Score nach unten drücken
-
-dictionary = {}
+from nltk.corpus import stopwords
 
 with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
     summary = json.load(file)
@@ -21,21 +10,13 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
     
 
     #function only accepts key_words due to '*'
-    def pre_processing(*, i: int = 1, text_given = str, solo_words: bool = False, remove_stop_words: bool = False): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
-        contract_type: str
-        parentcompany_of_contract: str
+    def pre_processing(*, text_given = str, solo_words: bool = False, remove_stop_words: bool = False): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
         content: str 
 
         not_relevant = re.compile(fr"\b(Section|Clause|Schedule|Article|Exhibit|\((\w+|\d*)\)|\d*[.,;:_-]*\d*[,.-;:_]+\d*|[\$\%\&]+|I+|name|title|\d+|usd|co(?:.)?|ltd(?:.)?|i{{2,}}|\d*\w*\d+\w*\d*\b)") #rausfiltern von irrelevanten Zeichen und Bezeichnungen, also auch Absatzmarkern
         #-> + removal von zahlen + wörtern die mit zahlen zusammenhängen wie "no.18"
 
         stop_words = set(stopwords.words('english'))
-
-        #if not text_given:
-
-        #    _, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
-
-        #else:
 
         content = text_given
 
@@ -71,6 +52,10 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
 
     def dataframe_construction_td_idf(metadata_contract: dict): #implements necessary DatFrames for relevant words
+
+        #relevant_contracts als auch die test_... listen dienen nur der besseren orientierung, in benutzung für die berechnung der IDF Werte
+        #stehen nur die indice listen
+
         relevant_contracts: list = [0, 2, 17, 24, 27, 31, 39, 41, 43, 53, 54, 55, 62, 65, 68, 69, 70, 71, 75, #indices of the relevant contract types
                                 77, 78, 85, 88, 90, 91, 94, 101, 103, 107, 111, 112, 115, 116, 120, 122, 132,
                                 134, 136, 153, 155, 158, 160, 163, 164, 167, 171, 174, 175, 183, 188, 191,
@@ -118,25 +103,6 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
 
         if selected_indices is None:
             raise ValueError("Fehler bei Korpus-Matching")
-        
-        # dataframe_foundation = []
-
-        # for i in range(len(selected_indices)):
-        #     output: dict = summary['data'][selected_indices[i]] #erstellen von dictionary, dass Grundlage für DF bildet
-        #     str; contract_title = output.get('title')
-        #     paragraphs: list = (output.get('paragraphs'))
-        #     for item in paragraphs:
-        #         content: str = item['context']
-        #     dataframe_foundation.append({
-        #         "contract": f"C{selected_indices[i]+1}", 
-        #         "title": contract_title, #title Zeile
-        #         "text": content #text Zeile
-        #     })
-
-        # print(f"\n\n{metadata_contract['contract_type']}\n\n")
-
-
-        # df = pd.DataFrame(dataframe_foundation)
 
         sentence_dataset = {}
 
@@ -151,9 +117,7 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
                 sentence_dataset [sentence_id]["page"] = page_number #durch Variable ersetzt wie Alex vorgeschlagen -> noch in process_data übernehmen
         df = pd.DataFrame.from_dict(sentence_dataset, orient="index")      
 
-        #df = df.set_index("contract")
         df["words"] = df["text"].apply(lambda x: pre_processing(text_given=x, solo_words=True, remove_stop_words=True)) #Erstellung einer von stop_words gefilterten Wort Zeile
-        #save = df.iloc[1]["words"]
 
         #calculation of tf
         all_words = df["words"].explode() #pandas series jedes wort einzelner eintrag
@@ -188,9 +152,6 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         word_statistics.columns = ["word", "share"] #bennent die Spalten des DataFrames
         word_statistics["contract_proportion"] = amount_of_contracts/word_statistics["share"]
         word_statistics["idf-value"] = numpy.log10(word_statistics["contract_proportion"])
-        #word_statistics = word_statistics.loc[word_statistics["share"]>=2].copy() #rausfiltern von einmal vorkommenden wörtern um "Company-Names und Co zu vermeiden, oder word dopplungen jeweils mit KI rausfiltern"
-        # print(word_statistics)
-        # print(tf_df)
 
         #calculation of TF-IDF
         merged_all_in_all = pd.merge(tf_df, word_statistics, on="word")
@@ -205,11 +166,6 @@ with open("CUADv1.json" , "r", encoding = "utf-8") as file: #einlesen json datei
         word_locations = word_locations.drop_duplicates(subset=["id", "word"])
 
         tf_idf_relevant = pd.merge(merged_all_in_all[["word", "TF-IDF"]], word_locations, on="word", how="inner")
-
-        # print(tf_idf_relevant)
-
-        # with pd.option_context("display.max_rows", None):
-        #     print(tf_idf_relevant)
 
         return tf_idf_relevant
 

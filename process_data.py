@@ -1,10 +1,6 @@
-#from read_dataset import gain_access
 import re
-from collections import Counter #musste installiert werden
-import pandas as pd #musste installiert werden
-import nltk #musste installiert werden - momentan noch nicht in benutzung
-from nltk.corpus import stopwords #nicht in Benutzung
-#from pandas_save import pre_processing, dataframe_construction_td_idf
+import pandas as pd
+from nltk.corpus import stopwords
 
 # sentence_dataset_represantation_example = {
      
@@ -22,44 +18,9 @@ from nltk.corpus import stopwords #nicht in Benutzung
 
 sentence_dataset = {} #benutztes dict in creation_of_dictionary
 
-dataset_content = {
-
-    "risk-word": [],
-    "risk-sentence": [],
-    "general_frequence" : [],
-    "relative_frequence": [],
-    "co-occurence": [],
-    "subcategory": [] #müssen noch erstellt werden
-
-}
-
-dataset_positive = {
-
-    "risk-word": [],
-    "risk-sentence": [],
-    "general_frequence" : [],
-    "relative_frequence": [] #maybe ratio to risk words?
-
-}
-
-dataset_general_IMPORTANT = {
-     
-    "category_distribution": {
-         
-        "financial": 0,
-        "legal": 0,
-        "operative": 0
-
-    },
-    "most_used_words": [],
-    "Words_per_categorie": [],
-    "risk-score_in_total": []
-
-}
-
 #function only accepts key_words due to '*'
     #function only accepts key_words due to '*'
-def pre_processing(*, i: int = 1, text_given = str, solo_words: bool = False, remove_stop_words: bool = False): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
+def pre_processing(*, text_given = str, solo_words: bool = False, remove_stop_words: bool = False): #preprocesses the contract and either returns a list of all words - or sentences used in the contract
     contract_type: str
     parentcompany_of_contract: str
     content: str 
@@ -68,12 +29,6 @@ def pre_processing(*, i: int = 1, text_given = str, solo_words: bool = False, re
     #-> + removal von zahlen + wörtern die mit zahlen zusammenhängen wie "no.18"
 
     stop_words = set(stopwords.words('english'))
-
-        #if not text_given:
-
-        #    _, _, content = gain_access(i) #gain access fuction liefert contract_type, parentcompany_of_contract, content von vertrag
-
-        #else:
 
     content = text_given
 
@@ -97,7 +52,7 @@ def pre_processing(*, i: int = 1, text_given = str, solo_words: bool = False, re
 
             return split_words_filtered
 
-            return split_words
+        return split_words
         
     else: #unterteilt text in sätze
 
@@ -133,60 +88,15 @@ def creation_of_dictionary(metadata_contract: dict) -> pd.DataFrame:
 
     risk_word_df = pd.concat([financial_df, legal_df, operative_df], ignore_index=True)
 
-    #noch zusammenfügen von kategorien programmieren, also wenn wort doppelt vorkommt also in mehreren kategorien diese zusammenfügen statt dopplungen zu entfernen
-
     risk_word_df = risk_word_df.drop_duplicates(subset=["id", "word", "risk_category"])
 
-    # with pd.option_context("display.max_rows", None):
-    #     print(risk_word_df)
-
     return risk_word_df
-    #print(relevant_df.columns)
-    # print(df.columns)
-        #print(df)
 
 
          
 
 
 def filter(text: str = "", sentence_id: str = ""): # filters the contract according to specific words, muss noch in direktes pdf reading umgewandelt werden
-
-    possible_financial_arguments: list = []
-    possible_financial_arguments_words: list = []
-
-    possible_positive_arguments: list = []
-    possible_positive_arguments_words: list = []
-
-    possible_legal_arguments: list = []
-    possible_legal_arguments_words: list = []
-
-    possible_operative_arguments: list = []
-    possible_operative_arguments_words: list = []
-
-
-
-    # #legal terms search
-    # #for i in range(len(content_further_seperated)):
-    # legal_list: list = re.findall(r"\bliabilit(?:y|ies)|liable(?:ness)|claim(?:s|ed|ing)?|"
-    #     r"cancel(?:led|ed|ling(?:s)?|ing|lation(?:s)?)?|penal(?:ty|ties)|punitive|arbitrat(?:or(?:s)?|ion(?:s)?)|media(?:te(?:d)?|ting|tor(?:s)?|tion(?:s)?)|"
-    #     r"disput(?:e(?:s)?|ed|ing(?:s)?)|fail(?:ure(?:s)?|ed|ing(?:s)?)|indemni(?:fy(?:ing)?|fie(?:s|d)|fication|ty|ties)|" 
-    #     r"force(?:[- ]+majeure)|act(?:(?:s)?\s*of\s*god)|breach(?:es|ed|ing)?|(?:hold|held)harmless|waiv(?:er(?:s)?|e(?:d)?|ing)|terminat(?:ion(?:s)?|e(?:d)?|ing)|"
-    #     r"default(?:s|ed|ing)?|sabotag(?:e(?:d)?|ing)|war(?:s)?|injunction(?:s)?|restrain(?:ed|ing(?:s)?)|infring(?:e(?:s)?|ed|ing(?:s)?|ement(?:s)?)|"
-    #     r"misconduct(?:ed|ing(?:s)?|s)?|violat(?:ion(?:s)?|e(?:d)?|ing)\b", text, re.I)
-
-    # #financial terms search
-    # financial_list: list = re.findall(r"\bpay(?:able|s|d|ment(?:s)?)?|(?:un[ -]|pre[- ]+)?paid|LC(?:s)?|" 
-    #     r"letter(?:s)?\s+of\s+credit|insur(?:ance(?:s)|e(?:s|d)?|ing|able|ured)|cover(?:age(?:s)?|ed|ing)|indemni(?:fy(?:ing)?|fie(?:s|d)|fication|ty|ties)|"
-    #     r"damag(?:e(?:s|d)?|ing)|repurchas(?:ing|e(?:s|d)?)|CPI(?:s)?|ConsumerPriceInd(?:ex|ices)|"
-    #     r"terminat(?:ion(?:s)?|e(?:s|d)?|ing)|default(?:s|ed|ing)?|(?:infringe(?:ment(?:s)?|(?:s|d)?)?|infringing)|fee(?:s)?|charg(?:e(?:s|d)?|ing)|cover(?:age|ing(?:s)?|ed|s)|"
-    #     r"los(?:s(?:es)?|e|es|t|ing)|expense(?:s|d)?\b", text, re.I)             
-
-    # #operative terms search
-    # operative_list: list = re.findall(r"\binspect(?:ion(?:s)?|ing|ed|s|able)?|delay(?:ing|ed|s)?|(?:non[- ])?exclusiv(?:ely|e|ity)|warrant(?:y|ies|ing|ed|s)|"
-    #     r"(?:non[- ])?confid(?:ential(?:ity)?|e(?:s|d)?|ing)|(?:low[- ])?quali(?:ty|ties)|injunction(?:s)?|restrain(?:s|ed|ing\s*(?:order{0,1}(?:s)?)?)?|"
-    #     r"disclos(?:ure(?:s)?|e(?:s|d)?|ing)|misle(?:d|ad(?:ing|s)?)|untrue|omi(?:t(?:ted|ting|s)?|ssion(?:s)?)\b", text, re.I)
-    #             # possible_operative_arguments.append(content_further_seperated[i])
-    #             # possible_operative_arguments_words.append(operative_word.group())
 
     legal_list: list = re.findall(
         r"\b(?:"
@@ -318,7 +228,6 @@ def filter(text: str = "", sentence_id: str = ""): # filters the contract accord
         r"bankrupt(?:cy|cies)?|"
         r"solven(?:cy|t)|"
         r"creditworthiness"
-        #r"((?:\$\s*)?(\d*[.,]*\d*[.,]*\d*[.,]*)?\d+\s*(?:\$|Thousand|Million|Billion|USD))|((?:\$\s*)(\d*[.,]*\d*[.,]*\d*[.,]*)?\d+\s*(?:\$|Thousand|Million|Billion|USD)?)"
         r")\b", text, re.I)
 
     operative_list: list = re.findall(
@@ -402,89 +311,43 @@ def filter(text: str = "", sentence_id: str = ""): # filters the contract accord
 
     return None
 
+#INAKTIV, nur benutzt für Regex Pattern Build Up
 
-    #NEU - positive Bonus in Risk Scaling soon to be implemented
-
-    # for i in range(len(content_further_seperated)):
-    #     if positive_word := re.search(r"\blimited liability|liability shall not exceed|maximum liability|cap on liability\b", content_further_seperated[i], re.I):
-    #            possible_positive_arguments.append(content_further_seperated[i])
-    #            possible_positive_arguments_words.append(positive_word.group())
-
-
-#CALCULATION OF RISK SCORE: IMPORTANT FOR LATER !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    # risk_setting_fin = 5
-    # risk_setting_leg = 5
-    # risk_setting_op = 3
-
-    # total_risk_fin = risk_setting_fin * len(possible_financial_arguments)
-    # total_risk_leg = risk_setting_leg * len(possible_legal_arguments)
-    # total_risk_op = risk_setting_op * len(possible_operative_arguments)
-
-    # total_length = len(possible_operative_arguments) + len(possible_legal_arguments) + len(possible_financial_arguments)
-
-    # overall_risk = calculation_risk_score(total_risk_fin, total_risk_leg, total_risk_op, total_length)
-
-    # setting_dic_details()
-
-    # print(fr"legal:", "\n" , fr"{possible_legal_arguments}")
-    # print(fr"finacial:", "\n" , fr"{possible_financial_arguments}")
-    # print(fr"operative:", "\n" , fr"{possible_operative_arguments}")
-
-    # print("Approximate risk score: %f" % overall_risk)
-
-    # print(fr""" current Risk-Word: {dataset_legal.get("Risk-Word")[1]} for""", "\n", fr"""current Risk-Sentence: {dataset_legal.get("Risk-Sentence")[1]}""")
-
-
-
-def most_used_words(i : int): #analyses the most used words in the entire contract for a given list of contracts
-    relevant_contracts: list = [0, 2, 16, 17, 24, 27, 31, 39, 41, 43, 53, 54, 55, 62, 65, 67, 68, 69, 70, 71, 75,
-                                77, 78, 85, 88, 90, 91, 94, 99, 101, 103, 107, 111, 112, 115, 116, 120, 122, 132,
-                                134, 136, 146, 153, 155, 158, 160, 163, 164, 167, 169, 171, 174, 175, 183, 188, 191,
-                                194, 198, 200, 216, 219, 223, 224, 228, 230, 232, 235, 237, 239, 241, 242, 247, 248,
-                                249, 254, 260, 262, 263, 265, 266, 280, 293, 297, 304, 306, 309, 310, 311, 313, 315,
-                                325, 327, 337, 343, 345, 348, 356, 359, 366, 368, 369, 376, 378, 379, 385, 388, 391,
-                                396, 398, 399, 400, 406, 413, 417, 429, 432, 436, 443, 447, 455, 457, 458, 460, 469,
-                                471, 474, 478, 481, 486, 493, 498, 500, 505, 506]
+# def most_used_words(i : int): #analyses the most used words in the entire contract for a given list of contracts
+#     relevant_contracts: list = [0, 2, 16, 17, 24, 27, 31, 39, 41, 43, 53, 54, 55, 62, 65, 67, 68, 69, 70, 71, 75,
+#                                 77, 78, 85, 88, 90, 91, 94, 99, 101, 103, 107, 111, 112, 115, 116, 120, 122, 132,
+#                                 134, 136, 146, 153, 155, 158, 160, 163, 164, 167, 169, 171, 174, 175, 183, 188, 191,
+#                                 194, 198, 200, 216, 219, 223, 224, 228, 230, 232, 235, 237, 239, 241, 242, 247, 248,
+#                                 249, 254, 260, 262, 263, 265, 266, 280, 293, 297, 304, 306, 309, 310, 311, 313, 315,
+#                                 325, 327, 337, 343, 345, 348, 356, 359, 366, 368, 369, 376, 378, 379, 385, 388, 391,
+#                                 396, 398, 399, 400, 406, 413, 417, 429, 432, 436, 443, 447, 455, 457, 458, 460, 469,
+#                                 471, 474, 478, 481, 486, 493, 498, 500, 505, 506]
 
     
-    service_indices = [17, 24, 48, 53, 55, 58, 75, 78, 103, 122, 160, 179, 200, 210, 212, 235, 248, 278, 285, 309, 325,
-                        356, 385, 406, 455, 457, 460, 506]
+#     service_indices = [17, 24, 48, 53, 55, 58, 75, 78, 103, 122, 160, 179, 200, 210, 212, 235, 248, 278, 285, 309, 325,
+#                         356, 385, 406, 455, 457, 460, 506]
     
-    distributor_indices = [0, 67, 85, 88, 89, 101, 120, 134, 136, 153, 155, 164, 167, 198, 216, 240, 260, 262, 265, 297,
-                           310, 311, 340, 345, 359, 366, 369, 379, 447, 458, 471, 493]
+#     distributor_indices = [0, 67, 85, 88, 89, 101, 120, 134, 136, 153, 155, 164, 167, 198, 216, 240, 260, 262, 265, 297,
+#                            310, 311, 340, 345, 359, 366, 369, 379, 447, 458, 471, 493]
     
-    supply_indices = [2, 16, 54, 70, 107, 115, 143, 169, 183, 188, 219, 239, 242, 313, 376, 378, 399, 417]
+#     supply_indices = [2, 16, 54, 70, 107, 115, 143, 169, 183, 188, 219, 239, 242, 313, 376, 378, 399, 417]
 
-    outsourcing_indices = [41, 62, 65, 68, 69, 99, 132, 175, 266, 304, 337, 348, 391, 400, 443, 478, 481, 486]
+#     outsourcing_indices = [41, 62, 65, 68, 69, 99, 132, 175, 266, 304, 337, 348, 391, 400, 443, 478, 481, 486]
     
-    license_indices = [27, 39, 43, 77, 94, 112, 146, 158, 163, 174, 191, 228, 230, 247, 249, 280, 306, 327, 343,
-                        368, 388, 396, 398, 413, 429, 432, 436, 445, 469, 474, 489, 500, 505]
+#     license_indices = [27, 39, 43, 77, 94, 112, 146, 158, 163, 174, 191, 228, 230, 247, 249, 280, 306, 327, 343,
+#                         368, 388, 396, 398, 413, 429, 432, 436, 445, 469, 474, 489, 500, 505]
 
-    words_of_contract = pre_processing(i, solo_words=True, remove_stop_words=True)
+#     words_of_contract = pre_processing(i, solo_words=True, remove_stop_words=True)
 
-    #counter = Counter(words_of_contract)
+#     counter = Counter(words_of_contract)
 
-    #totalcount_words = counter.total()
+#     totalcount_words = counter.total()
 
-    #most_used = counter.most_common(500)
+#     most_used = counter.most_common(500)
 
-    #print(most_used)
+#     print(most_used)
 
-    return words_of_contract
-
-def calculation_risk_score(financial: int, legal:int, operativ: int, length: int):
-    return (financial+legal+operativ)/length #nochmal minus positive/length
-
-def setting_dic_details():
-
-     words_of_contract = pre_processing(31, True, True)
-
-     counter = Counter(words_of_contract)
-
-    # totalcount_words = counter.total()
-
-    # relative_word_percentage = counter_current_word/totalcount_words
+#     return None
 
 
 
