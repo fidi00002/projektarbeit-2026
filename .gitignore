@@ -1,8 +1,6 @@
 .venv/
 .vscode/
-CUADv1.json
-test.json
-train_separate_questions.json
+tests.py
 __pycache__/
 *.pyc
 .env
