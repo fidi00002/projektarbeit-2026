@@ -72,7 +72,9 @@ deactivate
 ```
 verlassen werden
 
-Ganz wichtig in die leeren client = OpenAI(api_key="Platzhalter"), muss anstatt des Platzhalters jeweils der API-Key gesetzt werden
+## Ganz wichtig 
+
+In die leeren client = OpenAI(api_key="Platzhalter") Anweisungen, muss anstatt des Platzhalters jeweils der API-Key gesetzt werden
 
 Datensatz
 
